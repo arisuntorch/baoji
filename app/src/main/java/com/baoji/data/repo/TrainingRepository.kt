@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
+import java.time.YearMonth
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -41,6 +42,23 @@ class TrainingRepository @Inject constructor(
         ) { activePlans, exercises, today, last, session ->
             TrainingDayBuilder.build(date, time.now().toLocalTime(), activePlans, exercises, today, last, session)
         }
+    }
+
+    /** Calendar marks for one month; see [TrainingCalendar.marks]. */
+    fun observeMonthMarks(month: YearMonth): Flow<Map<LocalDate, DayMark>> = combine(
+        plans.observeActivePlans(),
+        logs.observeLoggedDates(month.atDay(1).toEpochDay(), month.atEndOfMonth().toEpochDay()),
+    ) { activePlans, logged ->
+        TrainingCalendar.marks(month, time.today(), activePlans, logged.toSet())
+    }
+
+    /** Read-only view of any day for the calendar. */
+    fun observePreview(date: LocalDate): Flow<DayPreview> = combine(
+        plans.observeActivePlans(),
+        plans.observeActiveExercises(),
+        logs.observeSets(date.toEpochDay()),
+    ) { activePlans, exercises, sets ->
+        TrainingCalendar.preview(date, time.today(), activePlans, exercises, sets)
     }
 
     fun observeHistory(exerciseName: String, limit: Int = 8): Flow<List<DayMax>> =

@@ -32,6 +32,8 @@ object LineIcons {
     val Import = icon("import", "M12 3.5v11", "M7.5 10l4.5 4.5l4.5-4.5", "M4.5 16.5v3h15v-3")
     val Export = icon("export", "M12 14.5v-11", "M7.5 8l4.5-4.5l4.5 4.5", "M4.5 16.5v3h15v-3")
     val Back = icon("back", "M15 5l-7 7l7 7")
+    val Forward = icon("forward", "M9 5l7 7l-7 7")
+    val Down = icon("down", "M7 10l5 5l5-5")
     val Plus = icon("plus", "M12 5v14", "M5 12h14")
     val Minus = icon("minus", "M5 12h14")
     val Check = icon("check", "M5 12.5l4.5 4.5l9.5-10")

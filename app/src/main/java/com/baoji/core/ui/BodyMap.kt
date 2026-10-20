@@ -1,5 +1,7 @@
 package com.baoji.core.ui
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -17,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.lerp
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.baoji.core.theme.Baoji
 import com.baoji.domain.Muscle
+import com.baoji.domain.MuscleLevel
 
 /** Figures grow with the card but stop here so the list below stays in view. */
 private val MaxFigureHeight = 180.dp
@@ -34,8 +36,8 @@ private val MaxFigureHeight = 180.dp
 /** Share of each half of the card a figure's box may take, leaving air between the two. */
 private const val HALF_FILL = 0.9f
 
-/** Lightest red used for a barely worked muscle; the hardest-worked one gets full red. */
-private const val MIN_RED = 0.3f
+/** Tint a planned but untouched muscle gets, so you can see today's targets before starting. */
+private const val PREVIEW_RED = 0.18f
 
 private val MUSCLE_NAMES = mapOf(
     Muscle.TRAPS to "斜方肌", Muscle.SHOULDERS to "肩", Muscle.CHEST to "胸", Muscle.BICEPS to "二头",
@@ -45,12 +47,18 @@ private val MUSCLE_NAMES = mapOf(
 )
 
 /**
- * Front and back figures, gym-machine-sticker style: grey body, muscles worked today in red,
- * deeper red for harder work. [levels] come from [com.baoji.domain.MuscleMap.levels].
+ * Front and back figures, gym-machine-sticker style: grey body, today's target muscles faintly red,
+ * turning deeper red with every completed set. [levels] come from [com.baoji.domain.MuscleMap.levels].
  */
 @Composable
-fun BodyMap(levels: Map<Muscle, Float>, modifier: Modifier = Modifier) {
-    val worked = levels.entries.sortedByDescending { it.value }.mapNotNull { MUSCLE_NAMES[it.key] }
+fun BodyMap(levels: Map<Muscle, MuscleLevel>, modifier: Modifier = Modifier) {
+    val reduce = rememberReduceMotion()
+    // One animation per muscle (fixed set), so each completed set visibly deepens the red.
+    val redness: Map<Muscle, Float> = Muscle.entries.associateWith { m ->
+        val target = levels[m]?.let { PREVIEW_RED + (1 - PREVIEW_RED) * it.depth.coerceIn(0f, 1f) } ?: 0f
+        animateFloatAsState(target, motion(reduce, tween(500)), label = "muscle$m").value
+    }
+    val worked = levels.entries.sortedByDescending { it.value.planned }.mapNotNull { MUSCLE_NAMES[it.key] }
     BoxWithConstraints(
         modifier.fillMaxWidth().clearAndSetSemantics {
             contentDescription = if (worked.isEmpty()) "人体图" else "今天练到：${worked.joinToString("、")}"
@@ -58,14 +66,14 @@ fun BodyMap(levels: Map<Muscle, Float>, modifier: Modifier = Modifier) {
     ) {
         val height = minOf(maxWidth / 2 * HALF_FILL / (BodyShapes.WIDTH / BodyShapes.HEIGHT), MaxFigureHeight)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Figure("正面", BodyShapes.FRONT, levels, absGaps = true, height = height)
-            Figure("背面", BodyShapes.BACK, levels, absGaps = false, height = height)
+            Figure("正面", BodyShapes.FRONT, redness, absGaps = true, height = height)
+            Figure("背面", BodyShapes.BACK, redness, absGaps = false, height = height)
         }
     }
 }
 
 @Composable
-private fun Figure(label: String, muscles: List<Pair<Muscle, FloatArray>>, levels: Map<Muscle, Float>, absGaps: Boolean, height: Dp) {
+private fun Figure(label: String, muscles: List<Pair<Muscle, FloatArray>>, redness: Map<Muscle, Float>, absGaps: Boolean, height: Dp) {
     val c = Baoji.colors
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(
@@ -86,7 +94,7 @@ private fun Figure(label: String, muscles: List<Pair<Muscle, FloatArray>>, level
                             topLeft = Offset((head[0] - head[2]) * scale, (head[1] - head[3]) * scale),
                             size = Size(head[2] * 2 * scale, head[3] * 2 * scale),
                         )
-                        shapes.forEach { (m, path) -> drawPath(path, muscleColor(levels[m], c.card, c.muscle, c.muscleIdle)) }
+                        shapes.forEach { (m, path) -> drawPath(path, lerp(c.muscleIdle, c.muscle, redness[m] ?: 0f)) }
                         gaps.forEach { g ->
                             drawLine(
                                 c.fill, Offset(g[0] * scale, g[1] * scale), Offset(g[2] * scale, g[3] * scale),
@@ -100,9 +108,6 @@ private fun Figure(label: String, muscles: List<Pair<Muscle, FloatArray>>, level
         Text(label, style = MaterialTheme.typography.labelMedium, color = c.secondaryText)
     }
 }
-
-private fun muscleColor(level: Float?, card: Color, red: Color, idle: Color): Color =
-    if (level == null || level <= 0f) idle else lerp(card, red, MIN_RED + (1 - MIN_RED) * level.coerceAtMost(1f))
 
 private fun mirror(pts: FloatArray): FloatArray =
     FloatArray(pts.size) { i -> if (i % 2 == 0) BodyShapes.WIDTH - pts[i] else pts[i] }

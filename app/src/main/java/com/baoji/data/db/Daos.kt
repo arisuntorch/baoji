@@ -118,6 +118,9 @@ interface TrainingLogDao {
     @Query("SELECT * FROM set_log ORDER BY timestamp")
     suspend fun allSets(): List<SetLogEntity>
 
+    @Query("SELECT DISTINCT date FROM set_log WHERE date BETWEEN :from AND :to")
+    fun observeLoggedDates(from: Long, to: Long): Flow<List<Long>>
+
     /** All sets of one exercise before a date; newest date first. */
     @Query("SELECT * FROM set_log WHERE exerciseId = :exerciseId AND date < :beforeDate ORDER BY date DESC, timestamp")
     suspend fun setsBefore(exerciseId: String, beforeDate: Long): List<SetLogEntity>

@@ -6,6 +6,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
+import com.baoji.core.ui.pressable
+import com.baoji.core.icon.LineIcons
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -44,6 +50,7 @@ import com.baoji.core.ui.monthDay
 import com.baoji.core.ui.rememberReduceMotion
 import com.baoji.data.db.FreeLogEntity
 import com.baoji.data.repo.TrainingDay
+import com.baoji.domain.ExerciseLoad
 import com.baoji.domain.MuscleMap
 
 @Composable
@@ -52,6 +59,7 @@ fun TrainingScreen(vm: TrainingViewModel = hiltViewModel()) {
     val extras by vm.extras.collectAsStateWithLifecycle()
     val editingId by vm.editingId.collectAsStateWithLifecycle()
     var showExtra by rememberSaveable { mutableStateOf(false) }
+    var showCalendar by rememberSaveable { mutableStateOf(false) }
     val d = day ?: return
 
     TrainingContent(
@@ -62,6 +70,7 @@ fun TrainingScreen(vm: TrainingViewModel = hiltViewModel()) {
         onUndo = vm::undoSet,
         onOpen = vm::openEditor,
         onExtra = { showExtra = true },
+        onCalendar = { showCalendar = true },
     )
 
     val editing = d.rows.firstOrNull { it.exercise.id == editingId }?.exercise
@@ -74,6 +83,9 @@ fun TrainingScreen(vm: TrainingViewModel = hiltViewModel()) {
             onAdjust = { w, r -> vm.adjust(editing.id, w, r) },
             onDismiss = vm::closeEditor,
         )
+    }
+    if (showCalendar) {
+        CalendarSheet(onDismiss = { showCalendar = false })
     }
     if (showExtra) {
         FreeTextSheet("加练", "例如：跑步 30 分钟、今天走了 8000 步", onDismiss = { showExtra = false }, onSave = vm::addExtra)
@@ -89,6 +101,7 @@ fun TrainingContent(
     onUndo: (String) -> Unit,
     onOpen: (String) -> Unit,
     onExtra: () -> Unit,
+    onCalendar: () -> Unit,
 ) {
     val c = Baoji.colors
     val reduce = rememberReduceMotion()
@@ -100,16 +113,20 @@ fun TrainingContent(
             verticalArrangement = Arrangement.spacedBy(BubbleGap),
         ) {
             item {
-                Text(
-                    day.date.monthDay(),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = c.primaryText,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp).semantics { heading() },
-                )
+                Box(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
+                    Row(
+                        Modifier.pressable(label = "${day.date.monthDay()}，打开日历", onClick = onCalendar).semantics { heading() },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(day.date.monthDay(), style = MaterialTheme.typography.headlineMedium, color = c.primaryText)
+                        Spacer(Modifier.width(6.dp))
+                        Icon(LineIcons.Down, contentDescription = null, tint = c.secondaryText, modifier = Modifier.size(22.dp))
+                    }
+                }
             }
             if (day.isTrainingDay && day.rows.isNotEmpty()) {
                 item(key = "body") {
-                    val levels = remember(day.rows) { MuscleMap.levels(day.rows.map { it.exercise.name to it.exercise.sets }) }
+                    val levels = remember(day.rows) { MuscleMap.levels(day.rows.map { ExerciseLoad(it.exercise.name, it.exercise.sets, it.done) }) }
                     BaojiCard { BodyMap(levels) }
                 }
             }

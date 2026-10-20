@@ -87,18 +87,42 @@ object MuscleMap {
     fun workFor(exerciseName: String): MuscleWork = matcher.match(exerciseName)
 
     /**
-     * How hard each muscle is worked today, 0..1 relative to the hardest-worked one.
-     * Each planned set counts fully for its main muscles and half for the helpers.
-     * Muscles with no work are absent from the map.
+     * Per muscle, how much today's plan asks of it ([MuscleLevel.planned]) and how much of that
+     * is already done ([MuscleLevel.done]), both relative to the most-worked muscle in the plan.
+     * Each set counts fully for its main muscles and half for the helpers; sets beyond the plan
+     * don't count. Muscles the plan doesn't touch are absent from the map.
      */
-    fun levels(exercises: List<Pair<String, Int>>): Map<Muscle, Float> {
-        val score = mutableMapOf<Muscle, Float>()
-        exercises.filter { it.second > 0 }.forEach { (name, sets) ->
-            val w = workFor(name)
-            w.primary.forEach { score.merge(it, sets.toFloat(), Float::plus) }
-            w.secondary.forEach { score.merge(it, sets * SECONDARY_SHARE, Float::plus) }
+    fun levels(exercises: List<ExerciseLoad>): Map<Muscle, MuscleLevel> {
+        val planned = mutableMapOf<Muscle, Float>()
+        val done = mutableMapOf<Muscle, Float>()
+        exercises.filter { it.sets > 0 }.forEach { e ->
+            val w = workFor(e.name)
+            val finished = e.done.coerceIn(0, e.sets)
+            fun add(m: Muscle, share: Float) {
+                planned.merge(m, e.sets * share, Float::plus)
+                done.merge(m, finished * share, Float::plus)
+            }
+            w.primary.forEach { add(it, 1f) }
+            w.secondary.forEach { add(it, SECONDARY_SHARE) }
         }
-        val max = score.values.maxOrNull() ?: return emptyMap()
-        return score.mapValues { it.value / max }
+        val max = planned.values.maxOrNull() ?: return emptyMap()
+        return planned.mapValues { (m, p) -> MuscleLevel(planned = p / max, done = (done[m] ?: 0f) / max) }
+    }
+}
+
+/** One exercise of today's plan: how many sets are planned and how many are done. */
+data class ExerciseLoad(val name: String, val sets: Int, val done: Int)
+
+/** 0..1 shares relative to the most-worked muscle of the day; [done] never exceeds [planned]. */
+data class MuscleLevel(val planned: Float, val done: Float) {
+    /**
+     * How deep to colour this muscle, 0..1: its own progress through today's sets, scaled so that a
+     * finished muscle shows at least half depth and the day's most-worked one reaches full depth.
+     */
+    val depth: Float
+        get() = if (planned <= 0f) 0f else (done / planned) * (MIN_FINISHED_DEPTH + (1 - MIN_FINISHED_DEPTH) * planned)
+
+    private companion object {
+        const val MIN_FINISHED_DEPTH = 0.5f
     }
 }
