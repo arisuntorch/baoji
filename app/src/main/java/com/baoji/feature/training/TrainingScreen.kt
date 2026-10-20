@@ -5,8 +5,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,7 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.baoji.core.theme.Baoji
+import com.baoji.core.ui.BaojiCard
+import com.baoji.core.ui.BodyMap
+import com.baoji.core.ui.BubbleGap
 import com.baoji.core.ui.FreeTextSheet
+import com.baoji.core.ui.NoteBubble
 import com.baoji.core.ui.PagePadding
 import com.baoji.core.ui.QuietButton
 import com.baoji.core.ui.Watermark
@@ -41,6 +44,7 @@ import com.baoji.core.ui.monthDay
 import com.baoji.core.ui.rememberReduceMotion
 import com.baoji.data.db.FreeLogEntity
 import com.baoji.data.repo.TrainingDay
+import com.baoji.domain.MuscleMap
 
 @Composable
 fun TrainingScreen(vm: TrainingViewModel = hiltViewModel()) {
@@ -90,14 +94,24 @@ fun TrainingContent(
     val reduce = rememberReduceMotion()
     Box(Modifier.fillMaxSize()) {
         if (!day.isTrainingDay) Watermark("休息日")
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = PagePadding, vertical = 8.dp)) {
+        LazyColumn(
+            Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = PagePadding, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(BubbleGap),
+        ) {
             item {
                 Text(
                     day.date.monthDay(),
                     style = MaterialTheme.typography.headlineMedium,
                     color = c.primaryText,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp).semantics { heading() },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp).semantics { heading() },
                 )
+            }
+            if (day.isTrainingDay && day.rows.isNotEmpty()) {
+                item(key = "body") {
+                    val levels = remember(day.rows) { MuscleMap.levels(day.rows.map { it.exercise.name to it.exercise.sets }) }
+                    BaojiCard { BodyMap(levels) }
+                }
             }
             if (day.isTrainingDay) {
                 item {
@@ -112,27 +126,16 @@ fun TrainingContent(
                     }
                 }
                 items(day.rows, key = { it.exercise.id }) { row ->
-                    Column {
-                        ExerciseRowItem(
-                            row = row,
-                            onOpen = { onOpen(row.exercise.id) },
-                            onSet = { onSet(row.exercise.id) },
-                            onUndo = { onUndo(row.exercise.id) },
-                        )
-                        HorizontalDivider(thickness = 0.5.dp, color = c.separator)
-                    }
+                    ExerciseRowItem(
+                        row = row,
+                        onOpen = { onOpen(row.exercise.id) },
+                        onSet = { onSet(row.exercise.id) },
+                        onUndo = { onUndo(row.exercise.id) },
+                    )
                 }
             }
-            items(extras, key = { it.id }) { e ->
-                Text(
-                    e.text,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = c.secondaryText,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                )
-            }
+            items(extras, key = { it.id }) { e -> NoteBubble(e.text) }
             item {
-                Spacer(Modifier.height(8.dp))
                 QuietButton("＋ 加练", onClick = onExtra)
                 Spacer(Modifier.height(24.dp))
             }

@@ -10,7 +10,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-/** Apple-style greys only. No accent colour anywhere. */
+/** Apple-style greys, plus one red used only to mark trained muscles on the body map. */
 @Immutable
 data class BaojiColors(
     val background: Color,
@@ -20,6 +20,9 @@ data class BaojiColors(
     val secondaryText: Color,
     val primaryText: Color,
     val watermark: Color,
+    /** Untrained muscle on the body map: one step darker than [fill]. */
+    val muscleIdle: Color,
+    val muscle: Color,
 )
 
 val LightColors = BaojiColors(
@@ -30,6 +33,8 @@ val LightColors = BaojiColors(
     secondaryText = Color(0xFF8E8E93),
     primaryText = Color(0xFF000000),
     watermark = Color(0xFFE5E5EA),
+    muscleIdle = Color(0xFFD1D1D6),
+    muscle = Color(0xFFE53935),
 )
 
 val DarkColors = BaojiColors(
@@ -40,6 +45,8 @@ val DarkColors = BaojiColors(
     secondaryText = Color(0xFF8E8E93),
     primaryText = Color(0xFFFFFFFF),
     watermark = Color(0xFF1C1C1E),
+    muscleIdle = Color(0xFF3A3A3C),
+    muscle = Color(0xFFE53935),
 )
 
 val LocalBaojiColors = staticCompositionLocalOf { LightColors }

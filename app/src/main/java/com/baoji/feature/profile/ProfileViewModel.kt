@@ -5,11 +5,13 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.baoji.core.FileIo
+import com.baoji.core.reasonForUser
 import com.baoji.data.io.BackupDto
 import com.baoji.data.io.BackupRestorer
 import com.baoji.data.io.ValidationResult
 import com.baoji.data.prefs.NutritionTargets
 import com.baoji.data.prefs.SettingsStore
+import com.baoji.data.prefs.ThemeMode
 import com.baoji.data.prefs.VibrationLevel
 import com.baoji.data.repo.JournalRepository
 import com.baoji.data.repo.Profile
@@ -50,6 +52,8 @@ class ProfileViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NutritionTargets.EMPTY)
     val vibration: StateFlow<VibrationLevel> = settings.vibration
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VibrationLevel.STANDARD)
+    val themeMode: StateFlow<ThemeMode> = settings.themeMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemeMode.SYSTEM)
 
     private val _dialog = MutableStateFlow<DataDialog?>(null)
     val dialog: StateFlow<DataDialog?> = _dialog.asStateFlow()
@@ -84,6 +88,8 @@ class ProfileViewModel @Inject constructor(
 
     fun setVibration(level: VibrationLevel) = viewModelScope.launch { settings.setVibration(level) }
 
+    fun setThemeMode(mode: ThemeMode) = viewModelScope.launch { settings.setThemeMode(mode) }
+
     /** Copies the picked image into private storage so it survives the source being deleted. */
     fun setAvatar(uri: Uri) = viewModelScope.launch {
         try {
@@ -103,7 +109,7 @@ class ProfileViewModel @Inject constructor(
         val text = try {
             files.readText(uri)
         } catch (e: Exception) {
-            _message.value = "读取失败：${e.message ?: "未知错误"}"
+            _message.value = "读取失败：${e.reasonForUser()}"
             return@launch
         }
         when (val r = withContext(Dispatchers.Default) { restorer.parse(text) }) {
@@ -118,7 +124,7 @@ class ProfileViewModel @Inject constructor(
             restorer.restore(backup)
             "已恢复"
         } catch (e: Exception) {
-            "恢复失败，原数据未改动：${e.message ?: "未知错误"}"
+            "恢复失败，原数据未改动：${e.reasonForUser()}"
         }
     }
 

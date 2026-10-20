@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.baoji.core.FileIo
+import com.baoji.core.reasonForUser
 import com.baoji.data.io.ImportIssue
 import com.baoji.data.io.ImportKind
 import com.baoji.data.io.ImportMode
@@ -69,7 +70,7 @@ class ImportViewModel @Inject constructor(
         try {
             setText(files.readText(uri))
         } catch (e: Exception) {
-            _status.value = "读取失败：${e.message ?: "未知错误"}"
+            _status.value = "读取失败：${e.reasonForUser()}"
         }
     }
 
@@ -83,7 +84,7 @@ class ImportViewModel @Inject constructor(
             }
             _done.value = true
         } catch (e: Exception) {
-            _status.value = "导入失败，已全部回滚：${e.message ?: "未知错误"}"
+            _status.value = "导入失败，已全部回滚：${e.reasonForUser()}"
         }
     }
 

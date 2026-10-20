@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,8 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +37,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -46,9 +46,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.baoji.core.icon.LineIcons
 import com.baoji.core.theme.Baoji
+import com.baoji.core.ui.BaojiCard
+import com.baoji.core.ui.BubbleGap
+import com.baoji.core.ui.CardShape
 import com.baoji.core.ui.FreeTextSheet
+import com.baoji.core.ui.IconTile
+import com.baoji.core.ui.NoteBubble
 import com.baoji.core.ui.PagePadding
 import com.baoji.core.ui.QuietButton
+import com.baoji.core.ui.monthDay
 import com.baoji.core.ui.motion
 import com.baoji.core.ui.pressable
 import com.baoji.core.ui.rememberReduceMotion
@@ -73,30 +79,37 @@ fun DietScreen(vm: DietViewModel = hiltViewModel()) {
 @Composable
 fun DietContent(day: DietDay, snacks: List<FreeLogEntity>, onToggle: (String) -> Unit, onSnack: () -> Unit) {
     val c = Baoji.colors
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = PagePadding, vertical = 8.dp)) {
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = PagePadding, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(BubbleGap),
+    ) {
         item {
-            MacroBar("蛋白", day.eaten.protein, day.targets.protein)
-            MacroBar("碳水", day.eaten.carbs, day.targets.carbs)
-            MacroBar("脂肪", day.eaten.fat, day.targets.fat)
             Text(
-                "${day.eaten.kcal.toLong()} kcal",
-                style = MaterialTheme.typography.bodySmall,
-                color = c.secondaryText,
-                modifier = Modifier.padding(top = 4.dp, bottom = 20.dp),
+                day.date.monthDay(),
+                style = MaterialTheme.typography.headlineMedium,
+                color = c.primaryText,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp).semantics { heading() },
             )
         }
-        items(day.rows, key = { it.task.id }) { row ->
-            Column {
-                MealRowItem(row, onToggle = { onToggle(row.task.id) })
-                HorizontalDivider(thickness = 0.5.dp, color = c.separator)
+        item {
+            BaojiCard {
+                MacroBar("蛋白", day.eaten.protein, day.targets.protein)
+                MacroBar("碳水", day.eaten.carbs, day.targets.carbs)
+                MacroBar("脂肪", day.eaten.fat, day.targets.fat)
+                Text(
+                    "${day.eaten.kcal.toLong()} kcal",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = c.secondaryText,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
             }
         }
-        items(snacks, key = { it.id }) { s ->
-            Text(s.text, style = MaterialTheme.typography.bodyMedium, color = c.secondaryText,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
+        items(day.rows, key = { it.task.id }) { row ->
+            MealRowItem(row, onToggle = { onToggle(row.task.id) })
         }
+        items(snacks, key = { it.id }) { s -> NoteBubble(s.text) }
         item {
-            Spacer(Modifier.height(8.dp))
             QuietButton("＋ 加餐", onClick = onSnack)
             Spacer(Modifier.height(24.dp))
         }
@@ -112,20 +125,20 @@ private fun MacroBar(name: String, eaten: Double, target: Double) {
     val shown by animateFloatAsState(fraction, motion(reduce, softSpring()), label = "bar$name")
     val targetText = if (target > 0) target.trimmed() else "—"
     Row(
-        Modifier.fillMaxWidth().padding(vertical = 6.dp).semantics(mergeDescendants = true) {
+        Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics(mergeDescendants = true) {
             contentDescription = "$name 已摄入 ${eaten.trimmed()} 克，目标 $targetText 克"
         },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(name, style = MaterialTheme.typography.bodyMedium, color = c.primaryText, modifier = Modifier.width(44.dp))
-        Box(Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)).background(c.fill)) {
-            Box(Modifier.fillMaxHeight().fillMaxWidth(shown).clip(RoundedCornerShape(4.dp)).background(c.primaryText))
+        Text(name, style = MaterialTheme.typography.bodyLarge, color = c.primaryText, modifier = Modifier.width(52.dp))
+        Box(Modifier.weight(1f).height(10.dp).clip(RoundedCornerShape(5.dp)).background(c.fill)) {
+            Box(Modifier.fillMaxHeight().fillMaxWidth(shown).clip(RoundedCornerShape(5.dp)).background(c.primaryText))
         }
         Text(
             "${eaten.trimmed()} / $targetText g",
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = c.secondaryText,
-            modifier = Modifier.padding(start = 10.dp).width(92.dp),
+            modifier = Modifier.padding(start = 12.dp).width(104.dp),
             textAlign = androidx.compose.ui.text.style.TextAlign.End,
         )
     }
@@ -138,18 +151,23 @@ private fun MealRowItem(row: MealRow, onToggle: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
+            .clip(CardShape)
+            .background(c.card)
             .semantics(mergeDescendants = true) {
                 role = Role.Checkbox
                 stateDescription = if (row.checked) "已吃" else "未吃"
             }
             .pressable(label = t.name, onClick = onToggle)
-            .padding(vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(LineIcons.forFood(t.name), contentDescription = null, tint = c.primaryText, modifier = Modifier.size(28.dp))
-        Spacer(Modifier.width(14.dp))
-        Text(t.name, style = MaterialTheme.typography.titleMedium, color = c.primaryText, modifier = Modifier.weight(1f))
-        Text("${t.amount.trimmed()} ${t.unit}", style = MaterialTheme.typography.bodyMedium, color = c.secondaryText)
+        IconTile(LineIcons.forFood(t.name))
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(t.name, style = MaterialTheme.typography.titleLarge, color = c.primaryText)
+            Spacer(Modifier.height(4.dp))
+            Text("${t.amount.trimmed()} ${t.unit}", style = MaterialTheme.typography.bodyLarge, color = c.secondaryText)
+        }
         Spacer(Modifier.width(16.dp))
         CheckCircle(row.checked)
     }
@@ -161,7 +179,7 @@ private fun CheckCircle(checked: Boolean) {
     val c = Baoji.colors
     val reduce = rememberReduceMotion()
     val progress by animateFloatAsState(if (checked) 1f else 0f, motion(reduce, tween(320)), label = "tick")
-    Canvas(Modifier.size(28.dp)) {
+    Canvas(Modifier.size(40.dp)) {
         val r = size.minDimension / 2
         if (progress > 0f) {
             drawCircle(c.primaryText, r)

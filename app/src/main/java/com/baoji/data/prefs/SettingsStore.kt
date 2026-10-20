@@ -21,6 +21,8 @@ data class NutritionTargets(val protein: Double, val carbs: Double, val fat: Dou
 
 enum class VibrationLevel { OFF, LIGHT, STANDARD, STRONG }
 
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
 @Singleton
 class SettingsStore @Inject constructor(private val store: DataStore<Preferences>) {
 
@@ -30,6 +32,10 @@ class SettingsStore @Inject constructor(private val store: DataStore<Preferences
 
     val vibration: Flow<VibrationLevel> = store.data.map { p ->
         p[VIBRATION]?.let { runCatching { VibrationLevel.valueOf(it) }.getOrNull() } ?: VibrationLevel.STANDARD
+    }
+
+    val themeMode: Flow<ThemeMode> = store.data.map { p ->
+        p[THEME]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() } ?: ThemeMode.SYSTEM
     }
 
     suspend fun currentTargets(): NutritionTargets = targets.first()
@@ -46,6 +52,10 @@ class SettingsStore @Inject constructor(private val store: DataStore<Preferences
         store.edit { it[VIBRATION] = level.name }
     }
 
+    suspend fun setThemeMode(mode: ThemeMode) {
+        store.edit { it[THEME] = mode.name }
+    }
+
     suspend fun clear() {
         store.edit { it.clear() }
     }
@@ -55,5 +65,6 @@ class SettingsStore @Inject constructor(private val store: DataStore<Preferences
         val CARBS = doublePreferencesKey("target_carbs")
         val FAT = doublePreferencesKey("target_fat")
         val VIBRATION = stringPreferencesKey("vibration")
+        val THEME = stringPreferencesKey("theme_mode")
     }
 }

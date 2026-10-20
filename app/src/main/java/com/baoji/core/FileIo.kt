@@ -17,16 +17,16 @@ import javax.inject.Singleton
 class FileIo @Inject constructor(@ApplicationContext private val context: Context) {
 
     suspend fun readText(uri: Uri): String = withContext(Dispatchers.IO) {
-        val stream = context.contentResolver.openInputStream(uri) ?: throw IOException("无法打开文件")
+        val stream = context.contentResolver.openInputStream(uri) ?: throw FileProblem("无法打开文件")
         stream.use { input ->
             val bytes = input.readNBytesCompat(MAX_IMPORT_BYTES + 1)
-            if (bytes.size > MAX_IMPORT_BYTES) throw IOException("文件太大")
+            if (bytes.size > MAX_IMPORT_BYTES) throw FileProblem("文件太大")
             bytes.toString(Charsets.UTF_8)
         }
     }
 
     suspend fun writeText(uri: Uri, text: String) = withContext(Dispatchers.IO) {
-        val stream = context.contentResolver.openOutputStream(uri, "wt") ?: throw IOException("无法写入文件")
+        val stream = context.contentResolver.openOutputStream(uri, "wt") ?: throw FileProblem("无法写入文件")
         stream.use { it.write(text.toByteArray(Charsets.UTF_8)) }
     }
 

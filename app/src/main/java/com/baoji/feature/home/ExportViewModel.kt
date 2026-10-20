@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.baoji.core.FileIo
+import com.baoji.core.reasonForUser
 import com.baoji.core.time.TimeSource
 import com.baoji.data.db.ExportDao
 import com.baoji.data.io.ExportFile
@@ -50,7 +51,7 @@ class ExportViewModel @Inject constructor(
         _ui.value = try {
             ExportUi(ready = exporter.export(range), range = range)
         } catch (e: Exception) {
-            ExportUi(message = "导出失败：${e.message ?: "未知错误"}")
+            ExportUi(message = "导出失败：${e.reasonForUser()}")
         }
     }
 
@@ -62,7 +63,8 @@ class ExportViewModel @Inject constructor(
             s.range?.let { exporter.record(it) }
             _ui.update { it.copy(message = "已保存") }
         } catch (e: Exception) {
-            _ui.update { it.copy(message = "保存失败：${e.message ?: "未知错误"}") }
+            // Some providers (e.g. emulator shared folders) hand back a URI we cannot write; say what to do instead.
+            _ui.update { it.copy(message = "保存失败：${e.reasonForUser()}。换个文件夹，或用分享。") }
         }
     }
 
@@ -73,7 +75,7 @@ class ExportViewModel @Inject constructor(
         return try {
             files.shareIntent(file.fileName, file.json).also { s.range?.let { exporter.record(it) } }
         } catch (e: Exception) {
-            _ui.update { it.copy(message = "分享失败：${e.message ?: "未知错误"}") }
+            _ui.update { it.copy(message = "分享失败：${e.reasonForUser()}") }
             null
         }
     }

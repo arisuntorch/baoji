@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +33,8 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.baoji.core.icon.LineIcons
 import com.baoji.core.theme.Baoji
+import com.baoji.core.ui.CardShape
+import com.baoji.core.ui.IconTile
 import com.baoji.core.ui.motion
 import com.baoji.core.ui.pressable
 import com.baoji.core.ui.rememberReduceMotion
@@ -57,43 +58,48 @@ fun ExerciseRowItem(
         Modifier
             .fillMaxWidth()
             .alpha(rowAlpha)
-            .padding(vertical = 10.dp),
+            .clip(CardShape)
+            .background(c.card)
+            .padding(horizontal = 16.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
             Modifier.weight(1f).pressable(label = "编辑${e.name}", onClick = onOpen),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(LineIcons.forExercise(e.name), contentDescription = null, tint = c.primaryText, modifier = Modifier.size(28.dp))
-            Spacer(Modifier.width(14.dp))
+            IconTile(LineIcons.forExercise(e.name))
+            Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
                 Text(
                     e.name,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     color = c.primaryText,
                     modifier = Modifier.drawWithContent {
                         drawContent()
                         if (strike > 0f) {
+                            // Overhang past both ends: CJK names have a stroke right at mid-height that would hide a text-width line.
+                            val overhang = 6.dp.toPx()
                             val y = size.height / 2
-                            drawLine(c.primaryText, Offset(0f, y), Offset(size.width * strike, y), strokeWidth = 1.dp.toPx())
+                            val end = -overhang + (size.width + 2 * overhang) * strike
+                            drawLine(c.primaryText, Offset(-overhang, y), Offset(end, y), strokeWidth = 1.dp.toPx())
                         }
                     },
                 )
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         "${e.currentWeight.trimmed()}kg × ${e.currentReps}",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = c.secondaryText,
                     )
                     if (row.overload) {
                         // The only nudge in the app: same colour and size as secondary text, no number.
-                        Text("↑", style = MaterialTheme.typography.bodySmall, color = c.secondaryText,
+                        Text("↑", style = MaterialTheme.typography.bodyLarge, color = c.secondaryText,
                             modifier = Modifier.semantics { contentDescription = "可以加重" })
                     }
-                    Text(" · ", style = MaterialTheme.typography.bodySmall, color = c.secondaryText)
-                    SetDots(done = row.done, total = e.sets)
                 }
+                Spacer(Modifier.height(10.dp))
+                SetDots(done = row.done, total = e.sets)
             }
         }
         SetButton(done = row.done, total = e.sets, complete = row.complete, name = e.name, onTap = onSet, onLongPress = onUndo)
@@ -103,11 +109,11 @@ fun ExerciseRowItem(
 @Composable
 private fun SetDots(done: Int, total: Int) {
     val c = Baoji.colors
-    Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         repeat(total) { i ->
             val filled = i < done
             val color by animateColorAsState(if (filled) c.primaryText else c.secondaryText, label = "dot$i")
-            Canvas(Modifier.size(6.dp)) {
+            Canvas(Modifier.size(9.dp)) {
                 if (filled) {
                     drawCircle(color)
                 } else {
@@ -121,10 +127,10 @@ private fun SetDots(done: Int, total: Int) {
 @Composable
 private fun SetButton(done: Int, total: Int, complete: Boolean, name: String, onTap: () -> Unit, onLongPress: () -> Unit) {
     val c = Baoji.colors
-    val fill by animateColorAsState(if (complete) c.primaryText else c.card, label = "setFill")
+    val fill by animateColorAsState(if (complete) c.primaryText else c.background, label = "setFill")
     Box(
         Modifier
-            .size(52.dp)
+            .size(64.dp)
             .clip(CircleShape)
             .background(fill)
             .border(1.5.dp, if (complete) c.primaryText else c.secondaryText, CircleShape)
@@ -134,7 +140,7 @@ private fun SetButton(done: Int, total: Int, complete: Boolean, name: String, on
     ) {
         Text(
             "$done/$total",
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.titleMedium,
             color = if (complete) c.background else c.primaryText,
         )
     }

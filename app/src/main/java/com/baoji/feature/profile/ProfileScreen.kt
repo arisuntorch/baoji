@@ -42,6 +42,8 @@ import com.baoji.core.ui.PageHeader
 import com.baoji.core.ui.PagePadding
 import com.baoji.core.ui.pressable
 import com.baoji.core.ui.trimmed
+import com.baoji.data.prefs.NutritionTargets
+import com.baoji.data.prefs.ThemeMode
 import com.baoji.data.prefs.VibrationLevel
 import com.baoji.domain.Sex
 
@@ -53,6 +55,7 @@ fun ProfileScreen(onBack: () -> Unit, onCleared: () -> Unit, vm: ProfileViewMode
     val profile by vm.profile.collectAsStateWithLifecycle()
     val targets by vm.targets.collectAsStateWithLifecycle()
     val vibration by vm.vibration.collectAsStateWithLifecycle()
+    val themeMode by vm.themeMode.collectAsStateWithLifecycle()
     val dialog by vm.dialog.collectAsStateWithLifecycle()
     val message by vm.message.collectAsStateWithLifecycle()
     val cleared by vm.cleared.collectAsStateWithLifecycle()
@@ -96,8 +99,16 @@ fun ProfileScreen(onBack: () -> Unit, onCleared: () -> Unit, vm: ProfileViewMode
             BaojiCard {
                 InfoRow(
                     "蛋白 / 碳水 / 脂肪",
-                    "${targets.protein.trimmed()} / ${targets.carbs.trimmed()} / ${targets.fat.trimmed()} g",
+                    if (targets == NutritionTargets.EMPTY) "未设置"
+                    else "${targets.protein.trimmed()} / ${targets.carbs.trimmed()} / ${targets.fat.trimmed()} g",
                 ) { editing = EditField.TARGETS }
+            }
+            SectionTitle("外观")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(ThemeMode.SYSTEM to "跟随系统", ThemeMode.LIGHT to "浅色", ThemeMode.DARK to "深色")
+                    .forEach { (mode, label) ->
+                        OutlineChoice(label, themeMode == mode, Modifier.weight(1f)) { vm.setThemeMode(mode) }
+                    }
             }
             SectionTitle("震动")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -137,7 +148,7 @@ fun ProfileScreen(onBack: () -> Unit, onCleared: () -> Unit, vm: ProfileViewMode
 @Composable
 private fun SectionTitle(text: String) {
     Text(text, style = MaterialTheme.typography.labelMedium, color = Baoji.colors.secondaryText,
-        modifier = Modifier.padding(start = 4.dp, top = 4.dp))
+        modifier = Modifier.padding(start = 16.dp, top = 4.dp))
 }
 
 @Composable

@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.baoji.core.theme.Baoji
+import com.baoji.core.ui.CardShape
 import com.baoji.core.ui.PagePadding
 import com.baoji.core.ui.RollingNumber
 import com.baoji.core.ui.Watermark
@@ -45,13 +45,13 @@ fun HomeContent(state: HomeState, onOpenDiary: () -> Unit, onOpenWeight: () -> U
         Column(
             Modifier.fillMaxSize().padding(horizontal = PagePadding),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
         ) {
-            Spacer(Modifier.weight(1f))
+            // Sit the figures in the upper part of the screen rather than dead centre.
+            Spacer(Modifier.weight(0.55f))
             BigFigure("摄入", state.intake)
             Box(Modifier.padding(vertical = 20.dp).width(160.dp).height(0.5.dp).background(c.separator))
             BigFigure("消耗", state.burned)
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.weight(1.45f))
             Row(Modifier.fillMaxWidth().padding(bottom = 24.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 EntryButton("日记", Modifier.weight(1f), onOpenDiary)
                 EntryButton("体重", Modifier.weight(1f), onOpenWeight)
@@ -85,7 +85,7 @@ private fun EntryButton(text: String, modifier: Modifier, onClick: () -> Unit) {
     Box(
         modifier
             .height(52.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(CardShape)
             .background(c.card)
             .pressable(label = text, onClick = onClick),
         contentAlignment = Alignment.Center,

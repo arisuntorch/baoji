@@ -1,5 +1,6 @@
 package com.baoji.core.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -26,10 +27,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.baoji.core.theme.Baoji
@@ -40,18 +43,33 @@ private val MONTH_DAY: DateTimeFormatter = DateTimeFormatter.ofPattern("M/d")
 
 fun LocalDate.monthDay(): String = format(MONTH_DAY)
 
-/** Huge, barely visible background word such as 训练日 / 休息日. Hidden from screen readers. */
+/** Huge, barely visible background word such as 训练日 / 休息日, set vertically down the right edge. Hidden from screen readers. */
 @Composable
 fun Watermark(text: String, modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxSize().clearAndSetSemantics { }, contentAlignment = Alignment.Center) {
+    Box(
+        modifier.fillMaxSize().padding(end = PagePadding).clearAndSetSemantics { },
+        contentAlignment = Alignment.CenterEnd,
+    ) {
         Text(
-            text,
+            text.toList().joinToString("\n"),
             color = Baoji.colors.watermark,
             fontSize = 88.sp,
+            lineHeight = 96.sp,
             fontWeight = FontWeight.Bold,
-            maxLines = 1,
+            textAlign = TextAlign.Center,
         )
     }
+}
+
+/** Free-text 加练 / 加餐 note shown as a quiet bubble in the list. */
+@Composable
+fun NoteBubble(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = Baoji.colors.secondaryText,
+        modifier = modifier.fillMaxWidth().clip(CardShape).background(Baoji.colors.card).padding(horizontal = 16.dp, vertical = 12.dp),
+    )
 }
 
 @Composable

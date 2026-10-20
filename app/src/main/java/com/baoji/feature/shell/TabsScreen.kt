@@ -43,7 +43,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.baoji.core.icon.LineIcons
 import com.baoji.core.theme.Baoji
 import com.baoji.core.ui.AvatarImage
-import com.baoji.core.ui.BareIconButton
+import com.baoji.core.ui.FloatingPill
+import com.baoji.core.ui.PagePadding
+import com.baoji.core.ui.TopBarHeight
+import com.baoji.core.ui.TopBarItemSize
 import com.baoji.core.ui.pressable
 import com.baoji.core.ui.rememberReduceMotion
 import com.baoji.data.io.ImportKind
@@ -76,7 +79,7 @@ fun TabsScreen(
                 modifier = Modifier.weight(1f),
                 label = "tab",
             ) { current ->
-                Box(Modifier.fillMaxSize().statusBarsPadding().padding(top = 52.dp)) {
+                Box(Modifier.fillMaxSize().statusBarsPadding().padding(top = TopBarHeight)) {
                     when (current) {
                         Tab.TRAINING -> TrainingScreen()
                         Tab.HOME -> HomeScreen(onOpenDiary = onOpenDiary, onOpenWeight = onOpenWeight)
@@ -87,16 +90,17 @@ fun TabsScreen(
             BottomBar(tab) { tab = it }
         }
 
-        // Top-left: export on home, import on the two content tabs.
-        Box(Modifier.statusBarsPadding().padding(start = 8.dp, top = 4.dp)) {
+        // Floating top bar: export on home, import on the two content tabs; avatar on the right.
+        Row(
+            Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = PagePadding, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             when (tab) {
-                Tab.HOME -> BareIconButton(LineIcons.Export, "导出") { showExport = true }
-                Tab.TRAINING -> BareIconButton(LineIcons.Import, "导入训练计划") { onImport(ImportKind.TRAINING) }
-                Tab.DIET -> BareIconButton(LineIcons.Import, "导入饮食计划") { onImport(ImportKind.DIET) }
+                Tab.HOME -> FloatingPill(LineIcons.Export, "导出") { showExport = true }
+                Tab.TRAINING -> FloatingPill(LineIcons.Import, "导入", label = "导入训练计划") { onImport(ImportKind.TRAINING) }
+                Tab.DIET -> FloatingPill(LineIcons.Import, "导入", label = "导入饮食计划") { onImport(ImportKind.DIET) }
             }
-        }
-        // Floating avatar, top-right on every tab.
-        Box(Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(end = 12.dp, top = 6.dp)) {
+            Spacer(Modifier.weight(1f))
             Avatar(avatarPath, onClick = onOpenProfile)
         }
     }
@@ -109,7 +113,7 @@ private fun Avatar(path: String?, onClick: () -> Unit) {
     val c = Baoji.colors
     Box(
         Modifier
-            .size(40.dp)
+            .size(TopBarItemSize)
             .shadow(6.dp, CircleShape, clip = false)
             .clip(CircleShape)
             .background(c.card)
@@ -117,7 +121,7 @@ private fun Avatar(path: String?, onClick: () -> Unit) {
             .pressable(label = "个人页", onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        AvatarImage(path, iconSize = 22.dp, modifier = Modifier.fillMaxSize())
+        AvatarImage(path, iconSize = 26.dp, modifier = Modifier.fillMaxSize())
     }
 }
 

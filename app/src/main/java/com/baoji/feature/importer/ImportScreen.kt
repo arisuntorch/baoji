@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.baoji.core.theme.Baoji
-import com.baoji.core.ui.OutlineChoice
+import com.baoji.core.ui.SecondaryButton
 import com.baoji.core.ui.PageHeader
 import com.baoji.core.ui.PagePadding
 import com.baoji.core.ui.SolidButton
@@ -99,7 +99,7 @@ fun ImportScreen(kind: ImportKind, onDone: () -> Unit, vm: ImportViewModel = hil
                 Modifier.fillMaxWidth().padding(horizontal = PagePadding, vertical = 12.dp).navigationBarsPadding(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                OutlineChoice("合并", selected = false, modifier = Modifier.weight(1f)) { vm.commit(ImportMode.MERGE) }
+                SecondaryButton("合并", Modifier.weight(1f)) { vm.commit(ImportMode.MERGE) }
                 SolidButton("替换", Modifier.weight(1f)) { vm.commit(ImportMode.REPLACE) }
             }
             Text(
