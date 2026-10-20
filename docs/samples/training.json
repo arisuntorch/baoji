@@ -1,0 +1,42 @@
+{
+  "app": "baoji",
+  "type": "training",
+  "version": 1,
+  "daily": [
+    {
+      "name": "步行去教室",
+      "kcal": 120
+    }
+  ],
+  "plans": [
+    {
+      "name": "上肢 A",
+      "days": [
+        1,
+        4
+      ],
+      "exercises": [
+        {
+          "name": "卧推",
+          "sets": 4,
+          "reps": [
+            6,
+            8
+          ],
+          "weight": 60,
+          "kcalPerSet": 8
+        },
+        {
+          "name": "高位下拉",
+          "sets": 4,
+          "reps": [
+            8,
+            10
+          ],
+          "weight": 50,
+          "kcalPerSet": 7
+        }
+      ]
+    }
+  ]
+}

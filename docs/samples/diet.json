@@ -1,0 +1,28 @@
+{
+  "app": "baoji",
+  "type": "diet",
+  "version": 1,
+  "targets": {
+    "protein": 170,
+    "carbs": 150,
+    "fat": 50
+  },
+  "meals": [
+    {
+      "name": "练前鸡蛋",
+      "amount": 2,
+      "unit": "个",
+      "protein": 12,
+      "carbs": 1,
+      "fat": 10
+    },
+    {
+      "name": "奶昔",
+      "amount": 1,
+      "unit": "份",
+      "protein": 79,
+      "carbs": 48,
+      "fat": 7
+    }
+  ]
+}
