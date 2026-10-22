@@ -6,7 +6,6 @@ import com.baoji.data.db.TrainingPlanEntity
 import com.baoji.data.db.TrainingSessionEntity
 import com.baoji.domain.OverloadRule
 import java.time.LocalDate
-import java.time.LocalTime
 
 data class ExerciseRow(
     val exercise: ExerciseEntity,
@@ -22,22 +21,17 @@ data class TrainingDay(
     val plans: List<TrainingPlanEntity>,
     val rows: List<ExerciseRow>,
     val session: TrainingSessionEntity?,
-    /** The breathing "开始" button: training day, ≥ 04:00, not yet checked in. */
-    val showCheckIn: Boolean,
 ) {
     val allComplete: Boolean get() = rows.isNotEmpty() && rows.all { it.complete }
 }
 
 object TrainingDayBuilder {
 
-    val CHECK_IN_FROM: LocalTime = LocalTime.of(4, 0)
-
     fun plansFor(date: LocalDate, active: List<TrainingPlanEntity>): List<TrainingPlanEntity> =
         active.filter { date.dayOfWeek.value in it.dayList() }
 
     fun build(
         date: LocalDate,
-        now: LocalTime,
         activePlans: List<TrainingPlanEntity>,
         activeExercises: List<ExerciseEntity>,
         todaySets: List<SetLogEntity>,
@@ -62,7 +56,6 @@ object TrainingDayBuilder {
             plans = plans,
             rows = rows,
             session = session,
-            showCheckIn = isTrainingDay && session == null && !now.isBefore(CHECK_IN_FROM),
         )
     }
 }

@@ -39,6 +39,7 @@ import com.baoji.core.ui.pressable
 import com.baoji.core.ui.trimmed
 import com.baoji.data.db.ExerciseEntity
 import com.baoji.data.repo.DayMax
+import com.baoji.data.repo.TrainingRepository
 
 const val WEIGHT_STEP = 2.5
 
@@ -48,6 +49,7 @@ fun ExerciseEditorSheet(
     exercise: ExerciseEntity,
     history: List<DayMax>,
     onAdjust: (weight: Double, reps: Int) -> Unit,
+    onSets: (Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val c = Baoji.colors
@@ -59,7 +61,7 @@ fun ExerciseEditorSheet(
         Column(Modifier.fillMaxWidth().padding(horizontal = PagePadding).navigationBarsPadding()) {
             Text(exercise.name, style = MaterialTheme.typography.titleLarge, color = c.primaryText)
             Text(
-                "次数区间 ${exercise.repsMin}–${exercise.repsMax} · ${exercise.sets} 组",
+                "次数区间 ${exercise.repsMin}–${exercise.repsMax}",
                 style = MaterialTheme.typography.bodySmall,
                 color = c.secondaryText,
             )
@@ -77,7 +79,14 @@ fun ExerciseEditorSheet(
                 onMinus = { onAdjust(exercise.currentWeight, (exercise.currentReps - 1).coerceAtLeast(1)) },
                 onPlus = { onAdjust(exercise.currentWeight, exercise.currentReps + 1) },
             )
-            Text("只影响之后的组", style = MaterialTheme.typography.labelSmall, color = c.secondaryText,
+            Spacer(Modifier.height(12.dp))
+            Stepper(
+                label = "组数",
+                value = "${exercise.sets}",
+                onMinus = { onSets((exercise.sets - 1).coerceAtLeast(1)) },
+                onPlus = { onSets((exercise.sets + 1).coerceAtMost(TrainingRepository.MAX_SETS)) },
+            )
+            Text("重量和次数只影响之后的组", style = MaterialTheme.typography.labelSmall, color = c.secondaryText,
                 modifier = Modifier.padding(top = 8.dp))
             Spacer(Modifier.height(20.dp))
             if (history.size >= 2) {

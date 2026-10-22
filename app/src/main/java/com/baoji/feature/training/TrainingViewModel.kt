@@ -46,10 +46,6 @@ class TrainingViewModel @Inject constructor(
     private val editing = MutableStateFlow<String?>(null)
     val editingId: StateFlow<String?> = editing
 
-    fun checkIn() = viewModelScope.launch {
-        if (repo.checkIn()) haptics.play(HapticKind.HEAVY)
-    }
-
     fun completeSet(exerciseId: String) = viewModelScope.launch {
         when (repo.completeSet(exerciseId)) {
             SetOutcome.SET_DONE -> haptics.play(HapticKind.LIGHT)
@@ -73,6 +69,10 @@ class TrainingViewModel @Inject constructor(
 
     fun adjust(exerciseId: String, weight: Double, reps: Int) = viewModelScope.launch {
         repo.adjust(exerciseId, weight, reps)
+    }
+
+    fun setSets(exerciseId: String, sets: Int) = viewModelScope.launch {
+        repo.setSets(exerciseId, sets)
     }
 
     fun history(name: String?): Flow<List<DayMax>> = if (name == null) emptyFlow() else repo.observeHistory(name)

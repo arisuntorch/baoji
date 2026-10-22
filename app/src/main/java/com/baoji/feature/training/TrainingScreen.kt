@@ -1,10 +1,5 @@
 package com.baoji.feature.training
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import com.baoji.core.ui.pressable
 import com.baoji.core.icon.LineIcons
@@ -47,7 +42,6 @@ import com.baoji.core.ui.PagePadding
 import com.baoji.core.ui.QuietButton
 import com.baoji.core.ui.Watermark
 import com.baoji.core.ui.monthDay
-import com.baoji.core.ui.rememberReduceMotion
 import com.baoji.data.db.FreeLogEntity
 import com.baoji.data.repo.TrainingDay
 import com.baoji.domain.ExerciseLoad
@@ -65,7 +59,6 @@ fun TrainingScreen(vm: TrainingViewModel = hiltViewModel()) {
     TrainingContent(
         day = d,
         extras = extras,
-        onCheckIn = vm::checkIn,
         onSet = vm::completeSet,
         onUndo = vm::undoSet,
         onOpen = vm::openEditor,
@@ -81,6 +74,7 @@ fun TrainingScreen(vm: TrainingViewModel = hiltViewModel()) {
             exercise = editing,
             history = history,
             onAdjust = { w, r -> vm.adjust(editing.id, w, r) },
+            onSets = { vm.setSets(editing.id, it) },
             onDismiss = vm::closeEditor,
         )
     }
@@ -96,7 +90,6 @@ fun TrainingScreen(vm: TrainingViewModel = hiltViewModel()) {
 fun TrainingContent(
     day: TrainingDay,
     extras: List<FreeLogEntity>,
-    onCheckIn: () -> Unit,
     onSet: (String) -> Unit,
     onUndo: (String) -> Unit,
     onOpen: (String) -> Unit,
@@ -104,7 +97,6 @@ fun TrainingContent(
     onCalendar: () -> Unit,
 ) {
     val c = Baoji.colors
-    val reduce = rememberReduceMotion()
     Box(Modifier.fillMaxSize()) {
         if (!day.isTrainingDay) Watermark("休息日")
         LazyColumn(
@@ -131,17 +123,6 @@ fun TrainingContent(
                 }
             }
             if (day.isTrainingDay) {
-                item {
-                    AnimatedVisibility(
-                        visible = day.showCheckIn,
-                        enter = fadeIn(tween(if (reduce) 0 else 300)),
-                        exit = fadeOut(tween(if (reduce) 0 else 600)) + shrinkVertically(tween(if (reduce) 0 else 600)),
-                    ) {
-                        Box(Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
-                            CheckInButton(onClick = onCheckIn)
-                        }
-                    }
-                }
                 items(day.rows, key = { it.exercise.id }) { row ->
                     ExerciseRowItem(
                         row = row,

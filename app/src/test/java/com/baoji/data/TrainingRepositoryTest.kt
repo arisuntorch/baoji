@@ -55,22 +55,23 @@ class TrainingRepositoryTest {
     private suspend fun today() = repo.observeDay(flowOf(env.time.today())).first()
 
     @Test
-    fun checkInButtonOnlyAfterFourAm() = runBlocking {
-        env.clock.set(LocalDateTime.of(2026, 10, 12, 3, 59))
-        assertThat(today().showCheckIn).isFalse()
-        env.clock.set(LocalDateTime.of(2026, 10, 12, 4, 0))
-        assertThat(today().showCheckIn).isTrue()
-        assertThat(repo.checkIn()).isTrue()
-        assertThat(repo.checkIn()).isFalse()
-        assertThat(today().showCheckIn).isFalse()
+    fun firstSetStartsSession() = runBlocking {
+        assertThat(today().session).isNull()
+        assertThat(repo.completeSet(benchId)).isEqualTo(SetOutcome.SET_DONE)
+        assertThat(today().session).isNotNull()
     }
 
     @Test
-    fun firstSetWithoutCheckInStartsSession() = runBlocking {
-        assertThat(repo.completeSet(benchId)).isEqualTo(SetOutcome.SET_DONE)
-        val day = today()
-        assertThat(day.session).isNotNull()
-        assertThat(day.showCheckIn).isFalse()
+    fun setSetsChangesTargetAndSyncsFinish() = runBlocking {
+        repo.completeSet(benchId); repo.completeSet(benchId); repo.completeSet(rowId)
+        assertThat(today().session!!.finishedAt).isNotNull()
+        repo.setSets(benchId, 3)
+        val reopened = today()
+        assertThat(reopened.rows.first { it.exercise.id == benchId }.exercise.sets).isEqualTo(3)
+        assertThat(reopened.session!!.finishedAt).isNull()
+        assertThat(repo.completeSet(benchId)).isEqualTo(SetOutcome.DAY_DONE)
+        repo.setSets(benchId, 0)
+        assertThat(today().rows.first { it.exercise.id == benchId }.exercise.sets).isEqualTo(1)
     }
 
     @Test
@@ -120,7 +121,7 @@ class TrainingRepositoryTest {
         env.clock.set(LocalDateTime.of(2026, 10, 13, 9, 0)) // Tuesday
         val day = today()
         assertThat(day.isTrainingDay).isFalse()
-        assertThat(day.showCheckIn).isFalse()
+        assertThat(day.rows).isEmpty()
     }
 
     @Test

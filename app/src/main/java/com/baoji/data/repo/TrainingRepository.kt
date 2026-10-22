@@ -40,7 +40,7 @@ class TrainingRepository @Inject constructor(
             logs.observeLastSessionSets(epoch),
             logs.observeSession(epoch),
         ) { activePlans, exercises, today, last, session ->
-            TrainingDayBuilder.build(date, time.now().toLocalTime(), activePlans, exercises, today, last, session)
+            TrainingDayBuilder.build(date, activePlans, exercises, today, last, session)
         }
     }
 
@@ -69,14 +69,6 @@ class TrainingRepository @Inject constructor(
                 .takeLast(limit)
         }
 
-    /** Explicit check-in. Returns false if already checked in today. */
-    suspend fun checkIn(): Boolean = db.withTransaction {
-        val today = time.todayEpochDay()
-        if (logs.session(today) != null) return@withTransaction false
-        startSession(today)
-        true
-    }
-
     private suspend fun startSession(today: Long): TrainingSessionEntity {
         val now = time.nowMillis()
         val date = LocalDate.ofEpochDay(today)
@@ -86,7 +78,7 @@ class TrainingRepository @Inject constructor(
         return s
     }
 
-    /** Records one set at the exercise's current weight × reps; auto-checks-in if needed. */
+    /** Records one set at the exercise's current weight × reps; starts today's session if needed. */
     suspend fun completeSet(exerciseId: String): SetOutcome = db.withTransaction {
         val today = time.todayEpochDay()
         val now = time.nowMillis()
@@ -137,13 +129,29 @@ class TrainingRepository @Inject constructor(
         )
     }
 
+    /** Changes the planned set count; finishes or reopens today's session to match. */
+    suspend fun setSets(exerciseId: String, sets: Int) = db.withTransaction {
+        val e = plans.exercise(exerciseId) ?: return@withTransaction
+        val now = time.nowMillis()
+        plans.upsertExercise(e.copy(sets = sets.coerceIn(1, MAX_SETS), updatedAt = now))
+        val today = time.todayEpochDay()
+        val session = logs.session(today) ?: return@withTransaction
+        val complete = currentDay(today).allComplete
+        if (complete != (session.finishedAt != null)) {
+            logs.upsertSession(session.copy(finishedAt = if (complete) now else null, updatedAt = now))
+        }
+    }
+
     private suspend fun currentDay(today: Long): TrainingDay = TrainingDayBuilder.build(
         LocalDate.ofEpochDay(today),
-        time.now().toLocalTime(),
         plans.activePlans(),
         plans.activeExercises(),
         logs.setsOn(today),
         emptyList(),
         logs.session(today),
     )
+
+    companion object {
+        const val MAX_SETS = 20
+    }
 }
