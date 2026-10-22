@@ -50,7 +50,12 @@ import com.baoji.domain.Sex
 private enum class EditField { HEIGHT, WEIGHT, AGE, TARGETS }
 
 @Composable
-fun ProfileScreen(onBack: () -> Unit, onCleared: () -> Unit, vm: ProfileViewModel = hiltViewModel()) {
+fun ProfileScreen(
+    onBack: () -> Unit,
+    onCleared: () -> Unit,
+    vm: ProfileViewModel = hiltViewModel(),
+    updates: UpdateViewModel = hiltViewModel(),
+) {
     val c = Baoji.colors
     val profile by vm.profile.collectAsStateWithLifecycle()
     val targets by vm.targets.collectAsStateWithLifecycle()
@@ -60,6 +65,7 @@ fun ProfileScreen(onBack: () -> Unit, onCleared: () -> Unit, vm: ProfileViewMode
     val message by vm.message.collectAsStateWithLifecycle()
     val cleared by vm.cleared.collectAsStateWithLifecycle()
     var editing by rememberSaveable { mutableStateOf<EditField?>(null) }
+    var showUpdate by rememberSaveable { mutableStateOf(false) }
     val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let(vm::setAvatar) }
     val backupPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::pickBackup) }
     LaunchedEffect(cleared) { if (cleared) onCleared() }
@@ -123,6 +129,10 @@ fun ProfileScreen(onBack: () -> Unit, onCleared: () -> Unit, vm: ProfileViewMode
                 Divider()
                 InfoRow("清空数据", "") { vm.askClear() }
             }
+            SectionTitle("关于")
+            BaojiCard {
+                InfoRow("检查更新", "当前 ${updates.currentVersion}") { showUpdate = true }
+            }
             message?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = c.secondaryText,
                     modifier = Modifier.pressable(label = "关闭提示", onClick = vm::clearMessage))
@@ -143,6 +153,7 @@ fun ProfileScreen(onBack: () -> Unit, onCleared: () -> Unit, vm: ProfileViewMode
         null -> Unit
     }
     DataDialogs(dialog, vm)
+    if (showUpdate) UpdateSheet(onDismiss = { showUpdate = false }, vm = updates)
 }
 
 @Composable
