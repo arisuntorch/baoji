@@ -1,6 +1,7 @@
 package com.baoji.data.io
 
 import androidx.room.withTransaction
+import com.baoji.data.db.ActivityLogEntity
 import com.baoji.data.db.BaojiDatabase
 import com.baoji.data.db.DailyActivityEntity
 import com.baoji.data.db.DiaryEntity
@@ -29,10 +30,11 @@ data class DbSnapshot(
     val mealLogs: List<MealLogEntity>,
     val freeLogs: List<FreeLogEntity>,
     val exports: List<ExportRecordEntity>,
+    val activityLogs: List<ActivityLogEntity>,
 ) {
     fun allDates(): Set<Long> =
         (weights.map { it.date } + diaries.map { it.date } + sets.map { it.date } + sessions.map { it.date } +
-            mealLogs.map { it.date } + freeLogs.map { it.date }).toSet()
+            mealLogs.map { it.date } + freeLogs.map { it.date } + activityLogs.map { it.date }).toSet()
 
     /** Days with any per-day record updated after [since]. Whole days are exported, not single rows. */
     fun datesTouchedAfter(since: Long): Set<Long> =
@@ -41,7 +43,8 @@ data class DbSnapshot(
             sets.filter { it.updatedAt > since }.map { it.date } +
             sessions.filter { it.updatedAt > since }.map { it.date } +
             mealLogs.filter { it.updatedAt > since }.map { it.date } +
-            freeLogs.filter { it.updatedAt > since }.map { it.date }).toSet()
+            freeLogs.filter { it.updatedAt > since }.map { it.date } +
+            activityLogs.filter { it.updatedAt > since }.map { it.date }).toSet()
 
     companion object {
         suspend fun load(db: BaojiDatabase): DbSnapshot = db.withTransaction {
@@ -58,6 +61,7 @@ data class DbSnapshot(
                 mealLogs = db.mealDao().allLogs(),
                 freeLogs = db.freeLogDao().all(),
                 exports = db.exportDao().all(),
+                activityLogs = db.activityLogDao().all(),
             )
         }
     }

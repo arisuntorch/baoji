@@ -132,11 +132,40 @@ class TrainingRepository @Inject constructor(
     /** Changes the planned set count; finishes or reopens today's session to match. */
     suspend fun setSets(exerciseId: String, sets: Int) = db.withTransaction {
         val e = plans.exercise(exerciseId) ?: return@withTransaction
-        val now = time.nowMillis()
-        plans.upsertExercise(e.copy(sets = sets.coerceIn(1, MAX_SETS), updatedAt = now))
+        plans.upsertExercise(e.copy(sets = sets.coerceIn(1, MAX_SETS), updatedAt = time.nowMillis()))
+        syncSession()
+    }
+
+    /** Deletes every set of this exercise logged today; returns false when there was none. */
+    suspend fun reset(exerciseId: String): Boolean = db.withTransaction {
+        val removed = logs.deleteSets(exerciseId, time.todayEpochDay()) > 0
+        if (removed) syncSession()
+        removed
+    }
+
+    /** Removes an exercise from its plan. Logged sets keep their snapshot. */
+    suspend fun archive(exerciseId: String) = db.withTransaction {
+        plans.archiveExercise(exerciseId, time.nowMillis())
+        syncSession()
+    }
+
+    /** Undoes [archive]. */
+    suspend fun unarchive(exerciseId: String) = db.withTransaction {
+        plans.unarchiveExercise(exerciseId, time.nowMillis())
+        syncSession()
+    }
+
+    /**
+     * Finishes or reopens today's session so it matches whether every planned set is done.
+     * A day whose exercises were all deleted keeps its state rather than counting as unfinished.
+     */
+    private suspend fun syncSession() {
         val today = time.todayEpochDay()
-        val session = logs.session(today) ?: return@withTransaction
-        val complete = currentDay(today).allComplete
+        val session = logs.session(today) ?: return
+        val now = time.nowMillis()
+        val day = currentDay(today)
+        if (day.rows.isEmpty()) return
+        val complete = day.allComplete
         if (complete != (session.finishedAt != null)) {
             logs.upsertSession(session.copy(finishedAt = if (complete) now else null, updatedAt = now))
         }

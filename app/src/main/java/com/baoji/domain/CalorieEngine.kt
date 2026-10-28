@@ -58,6 +58,20 @@ object CalorieEngine {
 
     fun intake(mealKcals: List<Double>): Double = mealKcals.sum()
 
+    /**
+     * Extra kcal of a timed activity. The resting 1 MET is already inside the BMR part of the day,
+     * so only (MET − 1) is added: kcal = (MET − 1) × kg × hours.
+     */
+    fun activityKcal(met: Double, weightKg: Double, minutes: Double): Double =
+        if (minutes <= 0) 0.0 else (met - 1.0).coerceAtLeast(0.0) * weightKg * minutes / 60.0
+
+    /** Steps counted as walking at [STEP_MET] and [STEPS_PER_MINUTE]. */
+    fun stepsKcal(steps: Int, weightKg: Double): Double =
+        activityKcal(STEP_MET, weightKg, steps.coerceAtLeast(0) / STEPS_PER_MINUTE)
+
+    private const val STEP_MET = 3.5
+    private const val STEPS_PER_MINUTE = 110.0
+
     /** Default kcal when a meal omits it: 4/4/9. */
     fun kcalFromMacros(protein: Double, carbs: Double, fat: Double): Double =
         4.0 * protein + 4.0 * carbs + 9.0 * fat

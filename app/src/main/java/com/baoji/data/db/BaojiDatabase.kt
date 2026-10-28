@@ -3,6 +3,7 @@ package com.baoji.data.db
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [
@@ -18,6 +19,7 @@ import androidx.room.migration.Migration
         MealLogEntity::class,
         FreeLogEntity::class,
         ExportRecordEntity::class,
+        ActivityLogEntity::class,
     ],
     version = BaojiDatabase.VERSION,
     exportSchema = true,
@@ -32,12 +34,24 @@ abstract class BaojiDatabase : RoomDatabase() {
     abstract fun freeLogDao(): FreeLogDao
     abstract fun exportDao(): ExportDao
     abstract fun maintenanceDao(): MaintenanceDao
+    abstract fun activityLogDao(): ActivityLogDao
 
     companion object {
-        const val VERSION = 1
+        const val VERSION = 2
         const val NAME = "baoji.db"
 
         /** Append each schema change as `Migration(n, n + 1)`; never fall back to destructive migration. */
-        val MIGRATIONS: Array<Migration> = emptyArray()
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `activity_log` (`id` TEXT NOT NULL, `date` INTEGER NOT NULL, " +
+                        "`timestamp` INTEGER NOT NULL, `kind` TEXT NOT NULL, `name` TEXT NOT NULL, `amount` REAL NOT NULL, " +
+                        "`unit` TEXT NOT NULL, `kcal` REAL NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_activity_log_date` ON `activity_log` (`date`)")
+            }
+        }
+
+        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2)
     }
 }

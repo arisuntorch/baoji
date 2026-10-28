@@ -40,6 +40,17 @@ class MigrationTest {
             it.getDouble(0)
         }
         assertThat(kg).isEqualTo(70.5)
+        val activityRows = db.openHelper.writableDatabase.query("SELECT COUNT(*) FROM activity_log").use {
+            it.moveToFirst()
+            it.getInt(0)
+        }
+        assertThat(activityRows).isEqualTo(0)
         db.close()
+    }
+
+    @Test
+    fun migration1To2MatchesExportedSchema() {
+        helper.createDatabase(name, 1).close()
+        helper.runMigrationsAndValidate(name, 2, true, BaojiDatabase.MIGRATION_1_2).close()
     }
 }

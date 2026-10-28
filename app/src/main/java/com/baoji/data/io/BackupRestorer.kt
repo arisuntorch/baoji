@@ -46,6 +46,7 @@ class BackupRestorer @Inject constructor(
             m.insertSets(dto.days.flatMap { d -> d.sets.map { BackupMapper.toEntity(it, BackupMapper.epochDay(d)) } })
             m.insertMealLogs(dto.days.flatMap { d -> d.meals.map { BackupMapper.toEntity(it, BackupMapper.epochDay(d)) } })
             m.insertFreeLogs(dto.days.flatMap { d -> d.free.map { BackupMapper.toEntity(it, BackupMapper.epochDay(d)) } })
+            m.insertActivityLogs(dto.days.flatMap { d -> d.activities.map { BackupMapper.toEntity(it, BackupMapper.epochDay(d)) } })
             m.insertExports(dto.exports.map(BackupMapper::toEntity))
         }
         settings.setTargets(NutritionTargets(dto.targets.protein, dto.targets.carbs, dto.targets.fat))

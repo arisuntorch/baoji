@@ -2,6 +2,7 @@ package com.baoji.data.repo
 
 import androidx.room.withTransaction
 import com.baoji.core.time.TimeSource
+import com.baoji.data.catalog.FoodItem
 import com.baoji.data.db.BaojiDatabase
 import com.baoji.data.db.MealLogEntity
 import com.baoji.data.db.MealTaskEntity
@@ -24,9 +25,11 @@ data class Macros(val protein: Double, val carbs: Double, val fat: Double, val k
 
 data class MealRow(val task: MealTaskEntity, val checked: Boolean)
 
+/** [extras] are foods logged from the built-in table, outside the meal plan. */
 data class DietDay(
     val date: LocalDate,
     val rows: List<MealRow>,
+    val extras: List<MealLogEntity>,
     val eaten: Macros,
     val targets: NutritionTargets,
 )
@@ -43,7 +46,8 @@ class DietRepository @Inject constructor(
     fun observeDay(days: Flow<LocalDate>): Flow<DietDay> = days.flatMapLatest { date ->
         combine(meals.observeActiveTasks(), meals.observeLogs(date.toEpochDay()), settings.targets) { tasks, logs, targets ->
             val checkedIds = logs.map { it.mealTaskId }.toSet()
-            DietDay(date, tasks.map { MealRow(it, it.id in checkedIds) }, sum(logs), targets)
+            val extras = logs.filter { isExtra(it.mealTaskId) }
+            DietDay(date, tasks.map { MealRow(it, it.id in checkedIds) }, extras, sum(logs), targets)
         }
     }
 
@@ -67,7 +71,42 @@ class DietRepository @Inject constructor(
         true
     }
 
+    /** Clears today's check of one meal; returns false when it was not checked. */
+    suspend fun reset(taskId: String): Boolean = meals.deleteLog(taskId, time.todayEpochDay()) > 0
+
+    /** Removes a meal from the plan. Past checks keep their snapshot. */
+    suspend fun archive(taskId: String) = meals.archiveTask(taskId, time.nowMillis())
+
+    suspend fun unarchive(taskId: String) = meals.unarchiveTask(taskId, time.nowMillis())
+
+    /** Logs [grams] of a catalog food for today. */
+    suspend fun addFood(food: FoodItem, grams: Double) {
+        val m = food.macrosFor(grams)
+        val now = time.nowMillis()
+        meals.upsertLog(
+            MealLogEntity(
+                id = UUID.randomUUID().toString(), mealTaskId = EXTRA_PREFIX + UUID.randomUUID(),
+                date = time.todayEpochDay(), timestamp = now, name = food.name, amount = grams, unit = GRAMS,
+                protein = round1(m.protein), carbs = round1(m.carbs), fat = round1(m.fat), kcal = round1(m.kcal),
+                updatedAt = now,
+            ),
+        )
+    }
+
+    suspend fun deleteExtra(logId: String): Boolean = meals.deleteLogById(logId) > 0
+
+    /** Puts back a deleted extra food exactly as it was. */
+    suspend fun restoreExtra(log: MealLogEntity) = meals.upsertLog(log)
+
     companion object {
+        /** mealTaskId prefix of foods logged outside the plan; each gets its own id so the unique index holds. */
+        const val EXTRA_PREFIX = "extra:"
+        const val GRAMS = "克"
+
+        fun isExtra(mealTaskId: String) = mealTaskId.startsWith(EXTRA_PREFIX)
+
+        private fun round1(v: Double) = Math.round(v * 10) / 10.0
+
         fun sum(logs: List<MealLogEntity>) = Macros(
             protein = logs.sumOf { it.protein },
             carbs = logs.sumOf { it.carbs },

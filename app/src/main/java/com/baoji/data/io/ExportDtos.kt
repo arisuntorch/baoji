@@ -96,6 +96,7 @@ data class DayDto(
     val sets: List<SetDto> = emptyList(),
     val meals: List<MealLogDto> = emptyList(),
     val free: List<FreeDto> = emptyList(),
+    val activities: List<ActivityLogDto> = emptyList(),
     val kcalIn: Double,
     val kcalOut: Double? = null,
     val ids: DayIdsDto? = null,
@@ -146,6 +147,20 @@ data class MealLogDto(
     val protein: Double,
     val carbs: Double,
     val fat: Double,
+    val kcal: Double,
+    val updatedAt: Long = 0,
+)
+
+/** Steps or a timed workout from the built-in list; [kind] is "steps" or "timed". */
+@Serializable
+data class ActivityLogDto(
+    val id: String,
+    val kind: String,
+    val name: String,
+    val time: String,
+    val ts: Long,
+    val amount: Double,
+    val unit: String,
     val kcal: Double,
     val updatedAt: Long = 0,
 )

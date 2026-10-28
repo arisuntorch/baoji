@@ -92,6 +92,7 @@ class Exporter @Inject constructor(
         val date = LocalDate.ofEpochDay(epochDay)
         val sets = s.sets.filter { it.date == epochDay }
         val meals = s.mealLogs.filter { it.date == epochDay }
+        val activities = s.activityLogs.filter { it.date == epochDay }
         val weightRow = s.weights.firstOrNull { it.date == epochDay }
         val diaryRow = s.diaries.firstOrNull { it.date == epochDay }
         val session = s.sessions.firstOrNull { it.date == epochDay }
@@ -106,8 +107,9 @@ class Exporter @Inject constructor(
             sets = sets.map { BackupMapper.toDto(it, clock(it.timestamp, zone)) },
             meals = meals.map { BackupMapper.toDto(it, clock(it.timestamp, zone)) },
             free = s.freeLogs.filter { it.date == epochDay }.map { BackupMapper.toDto(it, clock(it.timestamp, zone)) },
+            activities = activities.map { BackupMapper.toDto(it, clock(it.timestamp, zone)) },
             kcalIn = round1(kcalIn),
-            kcalOut = kcalOut(s, date, sets.sumOf { it.kcal }, zone, today)?.let(::round1),
+            kcalOut = kcalOut(s, date, sets.sumOf { it.kcal } + activities.sumOf { it.kcal }, zone, today)?.let(::round1),
             ids = DayIdsDto(weightRow?.id, weightRow?.updatedAt ?: 0, diaryRow?.id, diaryRow?.updatedAt ?: 0)
                 .takeIf { weightRow != null || diaryRow != null },
         )

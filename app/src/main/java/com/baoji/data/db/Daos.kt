@@ -91,6 +91,12 @@ interface PlanDao {
     @Query("UPDATE exercise SET archived = 1, updatedAt = :now WHERE archived = 0")
     suspend fun archiveAllExercises(now: Long)
 
+    @Query("UPDATE exercise SET archived = 1, updatedAt = :now WHERE id = :id")
+    suspend fun archiveExercise(id: String, now: Long)
+
+    @Query("UPDATE exercise SET archived = 0, updatedAt = :now WHERE id = :id")
+    suspend fun unarchiveExercise(id: String, now: Long)
+
     @Query("SELECT * FROM daily_activity WHERE archived = 0")
     fun observeActivities(): Flow<List<DailyActivityEntity>>
 
@@ -147,6 +153,9 @@ interface TrainingLogDao {
     @Query("DELETE FROM set_log WHERE id = :id")
     suspend fun deleteSet(id: String)
 
+    @Query("DELETE FROM set_log WHERE exerciseId = :exerciseId AND date = :date")
+    suspend fun deleteSets(exerciseId: String, date: Long): Int
+
     @Query("SELECT * FROM training_session WHERE date = :date")
     fun observeSession(date: Long): Flow<TrainingSessionEntity?>
 
@@ -177,6 +186,12 @@ interface MealDao {
     @Query("UPDATE meal_task SET archived = 1, updatedAt = :now WHERE archived = 0")
     suspend fun archiveAllTasks(now: Long)
 
+    @Query("UPDATE meal_task SET archived = 1, updatedAt = :now WHERE id = :id")
+    suspend fun archiveTask(id: String, now: Long)
+
+    @Query("UPDATE meal_task SET archived = 0, updatedAt = :now WHERE id = :id")
+    suspend fun unarchiveTask(id: String, now: Long)
+
     @Query("SELECT * FROM meal_log WHERE date = :date ORDER BY timestamp")
     fun observeLogs(date: Long): Flow<List<MealLogEntity>>
 
@@ -190,7 +205,10 @@ interface MealDao {
     suspend fun upsertLog(log: MealLogEntity)
 
     @Query("DELETE FROM meal_log WHERE mealTaskId = :taskId AND date = :date")
-    suspend fun deleteLog(taskId: String, date: Long)
+    suspend fun deleteLog(taskId: String, date: Long): Int
+
+    @Query("DELETE FROM meal_log WHERE id = :id")
+    suspend fun deleteLogById(id: String): Int
 }
 
 @Dao
@@ -220,6 +238,21 @@ interface ExportDao {
     suspend fun insert(record: ExportRecordEntity)
 }
 
+@Dao
+interface ActivityLogDao {
+    @Query("SELECT * FROM activity_log WHERE date = :date ORDER BY timestamp")
+    fun observe(date: Long): Flow<List<ActivityLogEntity>>
+
+    @Query("SELECT * FROM activity_log ORDER BY timestamp")
+    suspend fun all(): List<ActivityLogEntity>
+
+    @Upsert
+    suspend fun upsert(log: ActivityLogEntity)
+
+    @Query("DELETE FROM activity_log WHERE id = :id")
+    suspend fun delete(id: String): Int
+}
+
 /** Bulk operations used by restore and "clear all data". */
 @Dao
 abstract class MaintenanceDao {
@@ -235,11 +268,13 @@ abstract class MaintenanceDao {
     @Query("DELETE FROM meal_log") abstract suspend fun clearMealLogs()
     @Query("DELETE FROM free_log") abstract suspend fun clearFreeLogs()
     @Query("DELETE FROM export_record") abstract suspend fun clearExports()
+    @Query("DELETE FROM activity_log") abstract suspend fun clearActivityLogs()
 
     @Transaction
     open suspend fun clearAll() {
         clearProfile(); clearWeights(); clearDiary(); clearPlans(); clearExercises(); clearSets()
         clearSessions(); clearActivities(); clearMealTasks(); clearMealLogs(); clearFreeLogs(); clearExports()
+        clearActivityLogs()
     }
 
     @Insert abstract suspend fun insertWeights(items: List<WeightLogEntity>)
@@ -253,5 +288,6 @@ abstract class MaintenanceDao {
     @Insert abstract suspend fun insertMealLogs(items: List<MealLogEntity>)
     @Insert abstract suspend fun insertFreeLogs(items: List<FreeLogEntity>)
     @Insert abstract suspend fun insertExports(items: List<ExportRecordEntity>)
+    @Insert abstract suspend fun insertActivityLogs(items: List<ActivityLogEntity>)
     @Insert abstract suspend fun insertProfile(item: ProfileEntity)
 }

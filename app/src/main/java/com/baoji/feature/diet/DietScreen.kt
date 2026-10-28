@@ -48,8 +48,11 @@ import com.baoji.core.icon.LineIcons
 import com.baoji.core.theme.Baoji
 import com.baoji.core.ui.BaojiCard
 import com.baoji.core.ui.BubbleGap
+import com.baoji.core.ui.CatalogPickerSheet
+import com.baoji.core.ui.CatalogPickerSpec
+import com.baoji.core.ui.SwipeToDelete
+import com.baoji.core.ui.UndoBar
 import com.baoji.core.ui.CardShape
-import com.baoji.core.ui.FreeTextSheet
 import com.baoji.core.ui.IconTile
 import com.baoji.core.ui.NoteBubble
 import com.baoji.core.ui.PagePadding
@@ -60,7 +63,9 @@ import com.baoji.core.ui.pressable
 import com.baoji.core.ui.rememberReduceMotion
 import com.baoji.core.ui.softSpring
 import com.baoji.core.ui.trimmed
+import com.baoji.data.catalog.FoodItem
 import com.baoji.data.db.FreeLogEntity
+import com.baoji.data.db.MealLogEntity
 import com.baoji.data.repo.DietDay
 import com.baoji.data.repo.MealRow
 
@@ -68,16 +73,54 @@ import com.baoji.data.repo.MealRow
 fun DietScreen(vm: DietViewModel = hiltViewModel()) {
     val day by vm.day.collectAsStateWithLifecycle()
     val snacks by vm.snacks.collectAsStateWithLifecycle()
+    val undo by vm.undo.collectAsStateWithLifecycle()
     var showSnack by rememberSaveable { mutableStateOf(false) }
     val d = day ?: return
-    DietContent(d, snacks, onToggle = vm::toggle, onSnack = { showSnack = true })
+    Box(Modifier.fillMaxSize()) {
+        DietContent(
+            d, snacks,
+            actions = MealActions(
+                onToggle = vm::toggle, onReset = vm::reset, onArchive = vm::archive, onDeleteExtra = vm::deleteExtra,
+            ),
+            onSnack = { showSnack = true },
+        )
+        UndoBar(undo, onUndo = vm::undo, onTimeout = { undo?.let(vm::dismissUndo) })
+    }
     if (showSnack) {
-        FreeTextSheet("加餐", "例如：711 茶叶蛋一个", onDismiss = { showSnack = false }, onSave = vm::addSnack)
+        CatalogPickerSheet(
+            spec = FoodPickerSpec,
+            search = vm::searchFoods,
+            onDismiss = { showSnack = false },
+            onSave = vm::addFood,
+            onSaveText = vm::addSnack,
+        )
     }
 }
 
+class MealActions(
+    val onToggle: (String) -> Unit,
+    val onReset: (String) -> Unit = {},
+    val onArchive: (String) -> Unit = {},
+    val onDeleteExtra: (String) -> Unit = {},
+)
+
+private val FoodPickerSpec = CatalogPickerSpec<FoodItem>(
+    title = "加餐",
+    searchHint = "搜索食物，如 米饭、鸡蛋、牛奶",
+    emptyHint = "数据来自《中国食物成分表》，按可食部分称重",
+    itemTitle = { it.name },
+    itemSubtitle = { "${it.category} · 每100克 ${it.kcal.trimmed()} kcal" },
+    amountUnit = "克",
+    defaultAmount = "100",
+    maxAmount = 5000.0,
+    preview = { food, g ->
+        val m = food.macrosFor(g)
+        "约 ${m.kcal.toLong()} kcal · 蛋白 ${m.protein.trimmed()} · 碳水 ${m.carbs.trimmed()} · 脂肪 ${m.fat.trimmed()} 克"
+    },
+)
+
 @Composable
-fun DietContent(day: DietDay, snacks: List<FreeLogEntity>, onToggle: (String) -> Unit, onSnack: () -> Unit) {
+fun DietContent(day: DietDay, snacks: List<FreeLogEntity>, actions: MealActions, onSnack: () -> Unit) {
     val c = Baoji.colors
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -106,7 +149,12 @@ fun DietContent(day: DietDay, snacks: List<FreeLogEntity>, onToggle: (String) ->
             }
         }
         items(day.rows, key = { it.task.id }) { row ->
-            MealRowItem(row, onToggle = { onToggle(row.task.id) })
+            SwipeToDelete(label = row.task.name, onDelete = { actions.onArchive(row.task.id) }) {
+                MealRowItem(row, onToggle = { actions.onToggle(row.task.id) }, onReset = { actions.onReset(row.task.id) })
+            }
+        }
+        items(day.extras, key = { it.id }) { log ->
+            SwipeToDelete(label = log.name, onDelete = { actions.onDeleteExtra(log.id) }) { ExtraFoodRow(log) }
         }
         items(snacks, key = { it.id }) { s -> NoteBubble(s.text) }
         item {
@@ -145,7 +193,7 @@ private fun MacroBar(name: String, eaten: Double, target: Double) {
 }
 
 @Composable
-private fun MealRowItem(row: MealRow, onToggle: () -> Unit) {
+private fun MealRowItem(row: MealRow, onToggle: () -> Unit, onReset: () -> Unit) {
     val c = Baoji.colors
     val t = row.task
     Row(
@@ -157,7 +205,7 @@ private fun MealRowItem(row: MealRow, onToggle: () -> Unit) {
                 role = Role.Checkbox
                 stateDescription = if (row.checked) "已吃" else "未吃"
             }
-            .pressable(label = t.name, onClick = onToggle)
+            .pressable(label = t.name, onLongClick = onReset, onClick = onToggle)
             .padding(horizontal = 16.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -170,6 +218,27 @@ private fun MealRowItem(row: MealRow, onToggle: () -> Unit) {
         }
         Spacer(Modifier.width(16.dp))
         CheckCircle(row.checked)
+    }
+}
+
+/** A food logged from the built-in table: name, grams and its kcal snapshot. */
+@Composable
+private fun ExtraFoodRow(log: MealLogEntity) {
+    val c = Baoji.colors
+    Row(
+        Modifier.fillMaxWidth().clip(CardShape).background(c.card).padding(horizontal = 16.dp, vertical = 14.dp)
+            .semantics(mergeDescendants = true) {},
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(log.name, style = MaterialTheme.typography.bodyLarge, color = c.primaryText)
+            Text(
+                "${log.amount.trimmed()} ${log.unit} · 蛋白 ${log.protein.trimmed()} 克",
+                style = MaterialTheme.typography.bodyMedium,
+                color = c.secondaryText,
+            )
+        }
+        Text("${log.kcal.toLong()} kcal", style = MaterialTheme.typography.bodyMedium, color = c.secondaryText)
     }
 }
 

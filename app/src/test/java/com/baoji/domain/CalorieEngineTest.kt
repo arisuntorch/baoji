@@ -70,4 +70,23 @@ class CalorieEngineTest {
         assertThat(CalorieEngine.intake(listOf(100.0, 250.5))).isWithin(1e-9).of(350.5)
         assertThat(CalorieEngine.kcalFromMacros(12.0, 1.0, 10.0)).isWithin(1e-9).of(142.0)
     }
+
+    @Test
+    fun timedActivityCountsOnlyTheMetAboveRest() {
+        // Running 9.8 MET for 30 min at 70 kg: (9.8 − 1) × 70 × 0.5 h.
+        assertThat(CalorieEngine.activityKcal(met = 9.8, weightKg = 70.0, minutes = 30.0)).isWithin(1e-9).of(308.0)
+    }
+
+    @Test
+    fun activityBelowRestingMetBurnsNothingExtra() {
+        assertThat(CalorieEngine.activityKcal(met = 0.9, weightKg = 70.0, minutes = 60.0)).isEqualTo(0.0)
+        assertThat(CalorieEngine.activityKcal(met = 5.0, weightKg = 70.0, minutes = -5.0)).isEqualTo(0.0)
+    }
+
+    @Test
+    fun stepsUseBriskWalkingPace() {
+        // 3.5 MET at 110 steps/min → 8000 steps at 70 kg ≈ 212 kcal.
+        assertThat(CalorieEngine.stepsKcal(8000, 70.0)).isWithin(0.5).of(212.1)
+        assertThat(CalorieEngine.stepsKcal(0, 70.0)).isEqualTo(0.0)
+    }
 }

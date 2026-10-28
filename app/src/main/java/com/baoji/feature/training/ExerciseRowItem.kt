@@ -46,7 +46,7 @@ fun ExerciseRowItem(
     row: ExerciseRow,
     onOpen: () -> Unit,
     onSet: () -> Unit,
-    onUndo: () -> Unit,
+    onReset: () -> Unit,
 ) {
     val c = Baoji.colors
     val e = row.exercise
@@ -64,7 +64,7 @@ fun ExerciseRowItem(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
-            Modifier.weight(1f).pressable(label = "编辑${e.name}", onClick = onOpen),
+            Modifier.weight(1f).pressable(label = "编辑${e.name}", onLongClick = onReset, onClick = onOpen),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconTile(LineIcons.forExercise(e.name))
@@ -102,7 +102,7 @@ fun ExerciseRowItem(
                 SetDots(done = row.done, total = e.sets)
             }
         }
-        SetButton(done = row.done, total = e.sets, complete = row.complete, name = e.name, onTap = onSet, onLongPress = onUndo)
+        SetButton(done = row.done, total = e.sets, complete = row.complete, name = e.name, onTap = onSet, onLongPress = onReset)
     }
 }
 

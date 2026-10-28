@@ -35,7 +35,8 @@ class EnergyRepository @Inject constructor(
             db.weightDao().observeLatestOnOrBefore(epoch),
             db.planDao().observeActivities(),
             db.trainingLogDao().observeSets(epoch),
-        ) { profile, weight, activities, sets ->
+            db.activityLogDao().observe(epoch),
+        ) { profile, weight, activities, sets, extra ->
             if (profile == null || weight == null) {
                 null
             } else {
@@ -45,7 +46,7 @@ class EnergyRepository @Inject constructor(
                     heightCm = profile.heightCm,
                     age = AgeCalculator.currentAge(profile.enteredAge, profile.enteredYear, date),
                     dailyActivityKcal = activities.sumOf { it.kcal },
-                    trainingKcal = CalorieEngine.trainingKcal(sets.map { it.kcal }),
+                    trainingKcal = CalorieEngine.trainingKcal(sets.map { it.kcal } + extra.map { it.kcal }),
                 )
             }
         }

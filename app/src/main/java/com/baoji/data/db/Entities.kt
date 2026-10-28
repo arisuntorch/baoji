@@ -131,6 +131,32 @@ data class MealLogEntity(
     val updatedAt: Long,
 )
 
+object ActivityKind {
+    /** Picked from the built-in exercise list; [ActivityLogEntity.amount] is minutes. */
+    const val TIMED = "timed"
+
+    /** The day's step count; at most one row per day, id from [ActivityLogEntity.stepsId]. */
+    const val STEPS = "steps"
+}
+
+/** Extra activity outside the plan: catalog workouts and daily steps. [kcal] is a snapshot. */
+@Entity(tableName = "activity_log", indices = [Index("date")])
+data class ActivityLogEntity(
+    @PrimaryKey val id: String,
+    val date: Long,
+    val timestamp: Long,
+    val kind: String,
+    val name: String,
+    val amount: Double,
+    val unit: String,
+    val kcal: Double,
+    val updatedAt: Long,
+) {
+    companion object {
+        fun stepsId(date: Long) = "steps-$date"
+    }
+}
+
 object FreeLogType {
     const val EXTRA_TRAINING = "training"
     const val EXTRA_MEAL = "meal"
