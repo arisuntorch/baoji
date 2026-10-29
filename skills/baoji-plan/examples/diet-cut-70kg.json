@@ -1,0 +1,20 @@
+{
+  "app": "baoji",
+  "type": "diet",
+  "version": 1,
+  "targets": { "protein": 140, "carbs": 200, "fat": 55 },
+  "meals": [
+    { "name": "燕麦", "amount": 60, "unit": "g", "protein": 8, "carbs": 40, "fat": 4 },
+    { "name": "早餐鸡蛋", "amount": 2, "unit": "个", "protein": 13, "carbs": 1, "fat": 10 },
+    { "name": "牛奶", "amount": 250, "unit": "ml", "protein": 8, "carbs": 12, "fat": 9 },
+    { "name": "午餐米饭", "amount": 200, "unit": "g", "protein": 5, "carbs": 56, "fat": 1 },
+    { "name": "鸡胸肉", "amount": 200, "unit": "g", "protein": 62, "carbs": 0, "fat": 7 },
+    { "name": "西兰花", "amount": 200, "unit": "g", "protein": 6, "carbs": 14, "fat": 1 },
+    { "name": "食用油", "amount": 10, "unit": "g", "protein": 0, "carbs": 0, "fat": 10 },
+    { "name": "练后蛋白粉", "amount": 1, "unit": "勺", "protein": 24, "carbs": 3, "fat": 2 },
+    { "name": "香蕉", "amount": 1, "unit": "根", "protein": 1, "carbs": 27, "fat": 0, "kcal": 105 },
+    { "name": "晚餐红薯", "amount": 200, "unit": "g", "protein": 3, "carbs": 40, "fat": 0 },
+    { "name": "希腊酸奶", "amount": 100, "unit": "g", "protein": 10, "carbs": 4, "fat": 0 },
+    { "name": "混合坚果", "amount": 20, "unit": "g", "protein": 4, "carbs": 4, "fat": 10 }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "app": "baoji",
+  "type": "training",
+  "version": 1,
+  "daily": [
+    { "name": "步行通勤", "kcal": 120 }
+  ],
+  "plans": [
+    {
+      "name": "上肢",
+      "days": [1, 4],
+      "exercises": [
+        { "name": "卧推", "sets": 4, "reps": [6, 8], "weight": 60, "kcalPerSet": 8 },
+        { "name": "高位下拉", "sets": 4, "reps": [8, 10], "weight": 50, "kcalPerSet": 7 },
+        { "name": "哑铃推举", "sets": 3, "reps": [8, 10], "weight": 16, "kcalPerSet": 6 },
+        { "name": "坐姿划船", "sets": 3, "reps": [8, 10], "weight": 55, "kcalPerSet": 7 },
+        { "name": "哑铃侧平举", "sets": 3, "reps": [12, 15], "weight": 8, "kcalPerSet": 4 },
+        { "name": "哑铃弯举", "sets": 3, "reps": [10, 12], "weight": 12, "kcalPerSet": 4 },
+        { "name": "绳索下压", "sets": 3, "reps": [10, 12], "weight": 25, "kcalPerSet": 4 }
+      ]
+    },
+    {
+      "name": "下肢",
+      "days": [2, 5],
+      "exercises": [
+        { "name": "深蹲", "sets": 4, "reps": [5, 6], "weight": 80, "kcalPerSet": 10 },
+        { "name": "罗马尼亚硬拉", "sets": 3, "reps": [8, 10], "weight": 70, "kcalPerSet": 9 },
+        { "name": "腿举", "sets": 3, "reps": [10, 12], "weight": 120, "kcalPerSet": 8 },
+        { "name": "坐姿腿弯举", "sets": 3, "reps": [10, 12], "weight": 35, "kcalPerSet": 5 },
+        { "name": "站姿提踵", "sets": 3, "reps": 15, "weight": 40, "kcalPerSet": 3 },
+        { "name": "卷腹", "sets": 3, "reps": 15, "weight": 0, "kcalPerSet": 3 }
+      ]
+    }
+  ]
+}

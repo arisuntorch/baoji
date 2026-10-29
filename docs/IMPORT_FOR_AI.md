@@ -236,9 +236,13 @@ App 会按动作名里的**关键词**自动匹配图标，并在训练页的人
     { "name": "燕麦", "amount": 60, "unit": "g", "protein": 8, "carbs": 40, "fat": 4 },
     { "name": "鸡蛋", "amount": 3, "unit": "个", "protein": 18, "carbs": 2, "fat": 15 },
     { "name": "鸡胸肉", "amount": 200, "unit": "g", "protein": 46, "carbs": 0, "fat": 3 },
-    { "name": "米饭", "amount": 250, "unit": "g", "protein": 6, "carbs": 70, "fat": 1 },
+    { "name": "米饭", "amount": 350, "unit": "g", "protein": 9, "carbs": 98, "fat": 1 },
+    { "name": "牛肉", "amount": 150, "unit": "g", "protein": 39, "carbs": 0, "fat": 15 },
+    { "name": "全麦面包", "amount": 2, "unit": "片", "protein": 8, "carbs": 30, "fat": 2 },
     { "name": "蛋白粉奶昔", "amount": 1, "unit": "份", "protein": 25, "carbs": 5, "fat": 2 },
-    { "name": "香蕉", "amount": 1, "unit": "根", "protein": 1, "carbs": 27, "fat": 0, "kcal": 105 }
+    { "name": "香蕉", "amount": 1, "unit": "根", "protein": 1, "carbs": 27, "fat": 0, "kcal": 105 },
+    { "name": "混合坚果", "amount": 20, "unit": "g", "protein": 4, "carbs": 4, "fat": 10 },
+    { "name": "食用油", "amount": 10, "unit": "g", "protein": 0, "carbs": 0, "fat": 10 }
   ]
 }
 ```
