@@ -116,25 +116,25 @@ class ComponentsUiTest {
     }
 
     @Test
-    fun mealSwipeRightDeletesButSwipeLeftDoesNot() {
-        val task = MealTaskEntity("m1", "练前鸡蛋", 2.0, "个", 12.0, 1.0, 10.0, 142.0, 0, false, 0)
+    fun mealSwipeEitherWayDeletes() {
+        val egg = MealTaskEntity("m1", "练前鸡蛋", 2.0, "个", 12.0, 1.0, 10.0, 142.0, 0, false, 0)
+        val oats = MealTaskEntity("m2", "燕麦", 50.0, "克", 6.0, 33.0, 3.0, 183.0, 1, false, 0)
         val archived = mutableListOf<String>()
         rule.setContent {
             BaojiTheme(dark = false) {
                 DietContent(
-                    day = DietDay(LocalDate.of(2026, 10, 12), listOf(MealRow(task, false)), emptyList(), Macros.ZERO, NutritionTargets.EMPTY),
+                    day = DietDay(LocalDate.of(2026, 10, 12), listOf(MealRow(egg, false), MealRow(oats, false)), emptyList(), Macros.ZERO, NutritionTargets.EMPTY),
                     snacks = emptyList(),
                     actions = MealActions(onToggle = {}, onArchive = { archived += it }),
                     onSnack = {},
                 )
             }
         }
+        rule.onNodeWithText("删除").assertDoesNotExist()
         rule.onNodeWithText("练前鸡蛋").performTouchInput { swipeLeft() }
+        rule.onNodeWithText("燕麦").performTouchInput { swipeRight() }
         rule.waitForIdle()
-        assertThat(archived).isEmpty()
-        rule.onNodeWithText("练前鸡蛋").performTouchInput { swipeRight() }
-        rule.waitForIdle()
-        assertThat(archived).containsExactly("m1")
+        assertThat(archived).containsExactly("m1", "m2")
     }
 
     @Test

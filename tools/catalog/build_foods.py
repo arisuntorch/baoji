@@ -2,7 +2,8 @@
 
 Source: https://github.com/Sanotsu/china-food-composition-data
 (《中国食物成分表 标准版 第6版》 energy and general nutrients, folder
-json_data_v3_20260825_qwen38max_kimi_k3_fixed), plus supplement_foods.json.
+json_data_v3_20260825_qwen38max_kimi_k3_fixed), plus supplement_foods.tsv (prepared dishes,
+snacks, drinks) and food_aliases.tsv (everyday names appended in ［］ so search finds them).
 
 Usage: python -I build_foods.py <folder with merged_*.json> <output foods.json>
 Values are per 100 g edible portion. "Tr" (trace) counts as 0; rows without energy are dropped.
@@ -33,6 +34,28 @@ def category(file_name):
     return head.replace('及其制品', '')
 
 
+def tsv(path):
+    for line in open(path, encoding='utf-8'):
+        line = line.rstrip('\n')
+        if line and not line.startswith('#'):
+            yield line.split('\t')
+
+
+def with_aliases(name, aliases):
+    if name.endswith('］'):
+        old = name[name.rindex('［') + 1:-1].split('、')
+        extra = [a for a in aliases if a not in old]
+        return name[:-1] + ''.join('、' + a for a in extra) + '］'
+    return name + '［' + '、'.join(aliases) + '］'
+
+
+def check_energy(item):
+    # Catches typos: energy should roughly match 4/9/4 kcal per gram (alcohol and fibre aside).
+    est = 4 * item['p'] + 9 * item['f'] + 4 * item['h']
+    if item['c'] != '饮料' and abs(est - item['k']) > max(0.2 * item['k'], 15):
+        raise SystemExit(f"energy mismatch for {item['n']}: {item['k']} vs {est:.0f}")
+
+
 def main(src, out):
     here = os.path.dirname(os.path.abspath(__file__))
     rows, seen = [], set()
@@ -56,7 +79,15 @@ def main(src, out):
                 continue
             seen.add(key)
             rows.append(item)
-    for item in json.load(open(os.path.join(here, 'supplement_foods.json'), encoding='utf-8')):
+    aliases = {name: a.split('、') for name, a in tsv(os.path.join(here, 'food_aliases.tsv'))}
+    for item in rows:
+        if item['n'] in aliases:
+            item['n'] = with_aliases(item['n'], aliases.pop(item['n']))
+    if aliases:
+        raise SystemExit(f'aliases for unknown foods: {sorted(aliases)}')
+    for n, c, k, p, f, h in tsv(os.path.join(here, 'supplement_foods.tsv')):
+        item = {'n': n, 'c': c, 'k': float(k), 'p': float(p), 'f': float(f), 'h': float(h)}
+        check_energy(item)
         rows.append(item)
     with open(out, 'w', encoding='utf-8') as fh:
         json.dump(rows, fh, ensure_ascii=False, separators=(',', ':'))

@@ -25,8 +25,8 @@ import com.baoji.core.theme.Baoji
 import kotlinx.coroutines.delay
 
 /**
- * Swipe right to delete. Only left-to-right is enabled so a stray leftward swipe never deletes.
- * Screen readers get the same action as a custom "删除" action.
+ * Swipe either way to delete. Screen readers get the same action as a custom "删除" action.
+ * The "删除" backdrop is drawn only while the row is moving, so faded (done) rows never show it through.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +35,7 @@ fun SwipeToDelete(label: String, onDelete: () -> Unit, modifier: Modifier = Modi
     val state = rememberSwipeToDismissBoxState(positionalThreshold = { total -> total * 0.4f })
     // Fire once the row has settled off-screen; confirmValueChange can be called more than once per swipe.
     LaunchedEffect(state.currentValue) {
-        if (state.currentValue == SwipeToDismissBoxValue.StartToEnd) {
+        if (state.currentValue != SwipeToDismissBoxValue.Settled) {
             delete()
             // Normally the row leaves the list and this effect is cancelled; if it is still here, slide it back.
             delay(SETTLE_MS)
@@ -45,16 +45,19 @@ fun SwipeToDelete(label: String, onDelete: () -> Unit, modifier: Modifier = Modi
     SwipeToDismissBox(
         state = state,
         enableDismissFromStartToEnd = true,
-        enableDismissFromEndToStart = false,
+        enableDismissFromEndToStart = true,
         modifier = modifier.semantics {
             customActions = listOf(CustomAccessibilityAction("删除$label") { delete(); true })
         },
         backgroundContent = {
-            Box(
-                Modifier.fillMaxSize().clip(CardShape).background(Baoji.colors.fill).padding(start = 24.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                Text("删除", style = MaterialTheme.typography.labelLarge, color = Baoji.colors.primaryText)
+            val direction = state.dismissDirection
+            if (direction != SwipeToDismissBoxValue.Settled) {
+                Box(
+                    Modifier.fillMaxSize().clip(CardShape).background(Baoji.colors.fill).padding(horizontal = 24.dp),
+                    contentAlignment = if (direction == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd,
+                ) {
+                    Text("删除", style = MaterialTheme.typography.labelLarge, color = Baoji.colors.primaryText)
+                }
             }
         },
     ) { content() }
