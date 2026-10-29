@@ -69,8 +69,13 @@ object CalorieEngine {
     fun stepsKcal(steps: Int, weightKg: Double): Double =
         activityKcal(STEP_MET, weightKg, steps.coerceAtLeast(0) / STEPS_PER_MINUTE)
 
+    /** Strength sets: each set counts as [MINUTES_PER_SET] of the move's MET, rest between sets included. */
+    fun setsKcal(met: Double, weightKg: Double, sets: Int): Double =
+        activityKcal(met, weightKg, sets.coerceAtLeast(0) * MINUTES_PER_SET)
+
     private const val STEP_MET = 3.5
     private const val STEPS_PER_MINUTE = 110.0
+    private const val MINUTES_PER_SET = 2.0
 
     /** Default kcal when a meal omits it: 4/4/9. */
     fun kcalFromMacros(protein: Double, carbs: Double, fat: Double): Double =

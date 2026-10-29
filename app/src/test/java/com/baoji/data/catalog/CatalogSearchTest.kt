@@ -52,8 +52,14 @@ class CatalogSearchTest {
         assertThat(CatalogSearch.search(foods, "橙子") { it.name }.first().name).isEqualTo("橙［橙子］")
         assertThat(CatalogSearch.search(foods, "包菜") { it.name }.map { it.name }).contains("结球甘蓝（绿）［圆白菜、包菜、卷心菜］")
         assertThat(exercises.all { it.met in 1.0..20.0 }).isTrue()
-        for (q in listOf("跑步", "撸铁", "跳操", "家务", "台球")) {
+        for (q in listOf("跑步", "撸铁", "跳操", "台球")) {
             assertThat(CatalogSearch.search(exercises, q) { it.name }).isNotEmpty()
         }
+        // Strength moves come first and are what the gym-goer searches for.
+        assertThat(exercises.first().strength).isTrue()
+        for (q in listOf("卧推", "绳索下压", "高位下拉", "深蹲", "侧平举", "器械肩推")) {
+            assertThat(CatalogSearch.search(exercises, q) { it.name }.first().strength).isTrue()
+        }
+        assertThat(exercises.none { it.category == "生活" }).isTrue()
     }
 }

@@ -89,4 +89,11 @@ class CalorieEngineTest {
         assertThat(CalorieEngine.stepsKcal(8000, 70.0)).isWithin(0.5).of(212.1)
         assertThat(CalorieEngine.stepsKcal(0, 70.0)).isEqualTo(0.0)
     }
+
+    @Test
+    fun strengthSetsCountTwoMinutesEach() {
+        // 4 sets of a 5 MET move at 70 kg: (5 − 1) × 70 × 8 min / 60 ≈ 37.3 kcal.
+        assertThat(CalorieEngine.setsKcal(met = 5.0, weightKg = 70.0, sets = 4)).isWithin(0.05).of(37.3)
+        assertThat(CalorieEngine.setsKcal(met = 5.0, weightKg = 70.0, sets = 0)).isEqualTo(0.0)
+    }
 }

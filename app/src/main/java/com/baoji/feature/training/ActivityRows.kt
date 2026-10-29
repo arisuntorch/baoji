@@ -23,6 +23,7 @@ import com.baoji.core.ui.CardShape
 import com.baoji.core.ui.IconTile
 import com.baoji.core.ui.pressable
 import com.baoji.core.ui.trimmed
+import com.baoji.data.db.ActivityKind
 import com.baoji.data.db.ActivityLogEntity
 import com.baoji.data.repo.ActivityRepository
 import java.text.NumberFormat
@@ -53,7 +54,7 @@ fun StepsRowItem(steps: ActivityLogEntity?, onTap: () -> Unit, onReset: () -> Un
     }
 }
 
-/** A timed activity picked from the built-in list. */
+/** A timed activity or strength move picked from the built-in list. */
 @Composable
 fun ActivityLogRow(log: ActivityLogEntity) {
     val c = Baoji.colors
@@ -64,10 +65,17 @@ fun ActivityLogRow(log: ActivityLogEntity) {
     ) {
         Column(Modifier.weight(1f)) {
             Text(log.name, style = MaterialTheme.typography.bodyLarge, color = c.primaryText)
-            Text("${log.amount.trimmed()} ${log.unit}", style = MaterialTheme.typography.bodyMedium, color = c.secondaryText)
+            Text(activityDetail(log), style = MaterialTheme.typography.bodyMedium, color = c.secondaryText)
         }
         Text("${log.kcal.toLong()} kcal", style = MaterialTheme.typography.bodyMedium, color = c.secondaryText)
     }
+}
+
+/** "3 组 × 12 次 · 6kg" for strength sets, "30 分钟" otherwise. */
+fun activityDetail(log: ActivityLogEntity): String {
+    if (log.kind != ActivityKind.SETS) return "${log.amount.trimmed()} ${log.unit}"
+    val load = log.weightKg?.let { "${it.trimmed()}kg" } ?: "自重"
+    return "${log.amount.toInt()} 组 × ${log.reps ?: 0} 次 · $load"
 }
 
 private fun formatSteps(amount: Double): String = NumberFormat.getIntegerInstance(Locale.ROOT).format(amount.toLong())

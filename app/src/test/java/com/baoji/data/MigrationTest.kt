@@ -53,4 +53,22 @@ class MigrationTest {
         helper.createDatabase(name, 1).close()
         helper.runMigrationsAndValidate(name, 2, true, BaojiDatabase.MIGRATION_1_2).close()
     }
+
+    @Test
+    fun migration2To3KeepsActivityRows() {
+        helper.createDatabase(name, 2).use { db ->
+            db.execSQL(
+                "INSERT INTO activity_log (id, date, timestamp, kind, name, amount, unit, kcal, updatedAt) " +
+                    "VALUES ('a', 1, 0, 'timed', '跑步', 30, '分钟', 300, 0)",
+            )
+        }
+        helper.runMigrationsAndValidate(name, 3, true, BaojiDatabase.MIGRATION_2_3).use { db ->
+            db.query("SELECT name, reps, weightKg FROM activity_log").use { c ->
+                assertThat(c.moveToFirst()).isTrue()
+                assertThat(c.getString(0)).isEqualTo("跑步")
+                assertThat(c.isNull(1)).isTrue()
+                assertThat(c.isNull(2)).isTrue()
+            }
+        }
+    }
 }

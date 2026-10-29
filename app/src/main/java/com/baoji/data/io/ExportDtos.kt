@@ -151,7 +151,10 @@ data class MealLogDto(
     val updatedAt: Long = 0,
 )
 
-/** Steps or a timed workout from the built-in list; [kind] is "steps" or "timed". */
+/**
+ * Steps, a timed workout or strength sets from the built-in list; [kind] is "steps", "timed" or "sets".
+ * For "sets", [amount] is the number of sets and [reps] / [weightKg] describe each set.
+ */
 @Serializable
 data class ActivityLogDto(
     val id: String,
@@ -163,6 +166,8 @@ data class ActivityLogDto(
     val unit: String,
     val kcal: Double,
     val updatedAt: Long = 0,
+    val reps: Int? = null,
+    val weightKg: Double? = null,
 )
 
 @Serializable

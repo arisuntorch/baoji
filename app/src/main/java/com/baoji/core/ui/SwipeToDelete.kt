@@ -7,16 +7,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
@@ -32,7 +34,12 @@ import kotlinx.coroutines.delay
 @Composable
 fun SwipeToDelete(label: String, onDelete: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val delete by rememberUpdatedState(onDelete)
-    val state = rememberSwipeToDismissBoxState(positionalThreshold = { total -> total * 0.4f })
+    // Plain remember, not rememberSwipeToDismissBoxState: that one is saveable, so a row brought back by
+    // undo under the same LazyColumn key would restore as "swiped away" and delete itself again.
+    val density = LocalDensity.current
+    val state = remember {
+        SwipeToDismissBoxState(SwipeToDismissBoxValue.Settled, density, positionalThreshold = { total -> total * 0.4f })
+    }
     // Fire once the row has settled off-screen; confirmValueChange can be called more than once per swipe.
     LaunchedEffect(state.currentValue) {
         if (state.currentValue != SwipeToDismissBoxValue.Settled) {

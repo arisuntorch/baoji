@@ -1,6 +1,8 @@
 package com.baoji.core.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -44,7 +46,14 @@ class CatalogPickerSpec<T>(
     val maxAmount: Double,
     /** One line shown under the amount field, e.g. "约 290 kcal". */
     val preview: (T, Double) -> String,
+    /** Items entered as sets × reps × weight instead of a single amount, e.g. 卧推. */
+    val usesSets: (T) -> Boolean = { false },
+    /** One line shown under the sets fields, given the number of sets. */
+    val setsPreview: (T, Int) -> String = { _, _ -> "" },
 )
+
+/** What was entered for a strength move; a null [weightKg] means bodyweight. */
+data class SetsEntry(val sets: Int, val reps: Int, val weightKg: Double?)
 
 /**
  * Two-step sheet: search the built-in table, then enter an amount. When nothing fits,
@@ -58,6 +67,7 @@ fun <T> CatalogPickerSheet(
     onDismiss: () -> Unit,
     onSave: (T, Double) -> Unit,
     onSaveText: (String) -> Unit,
+    onSaveSets: (T, SetsEntry) -> Unit = { _, _ -> },
 ) {
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var query by rememberSaveable { mutableStateOf("") }
@@ -70,6 +80,11 @@ fun <T> CatalogPickerSheet(
             if (pick == null) {
                 SearchStep(spec, query, onQuery = { query = it.take(40) }, search, onPick = { selected = it }, onSaveText = {
                     onSaveText(query.trim())
+                    onDismiss()
+                })
+            } else if (spec.usesSets(pick)) {
+                SetsStep(spec, pick, onBack = { selected = null }, onSave = { entry ->
+                    onSaveSets(pick, entry)
                     onDismiss()
                 })
             } else {
@@ -163,6 +178,65 @@ private fun <T> AmountStep(spec: CatalogPickerSpec<T>, item: T, onBack: () -> Un
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
 }
 
+@Composable
+private fun <T> SetsStep(spec: CatalogPickerSpec<T>, item: T, onBack: () -> Unit, onSave: (SetsEntry) -> Unit) {
+    val c = Baoji.colors
+    val focus = remember { FocusRequester() }
+    var sets by rememberSaveable { mutableStateOf(DEFAULT_SETS) }
+    var reps by rememberSaveable { mutableStateOf(DEFAULT_REPS) }
+    var weight by rememberSaveable { mutableStateOf("") }
+    val setCount = sets.toIntOrNull()?.takeIf { it in 1..MAX_SETS }
+    val repCount = reps.toIntOrNull()?.takeIf { it in 1..MAX_REPS }
+    // Empty weight is bodyweight; anything typed must be a sensible load.
+    val load = if (weight.isEmpty()) null else weight.toDoubleOrNull()?.takeIf { it > 0 && it <= MAX_LIFT_KG }
+    val valid = setCount != null && repCount != null && (weight.isEmpty() || load != null)
+    Text(spec.itemTitle(item), style = MaterialTheme.typography.titleLarge, color = c.primaryText)
+    Text(spec.itemSubtitle(item), style = MaterialTheme.typography.bodyMedium, color = c.secondaryText)
+    Spacer(Modifier.height(12.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        NumberField(sets, { sets = it.filter(Char::isDigit).take(2) }, "组", KeyboardType.Number, Modifier.weight(1f).focusRequester(focus))
+        NumberField(reps, { reps = it.filter(Char::isDigit).take(3) }, "次", KeyboardType.Number, Modifier.weight(1f))
+        NumberField(
+            weight, { v -> weight = v.filter { it.isDigit() || it == '.' }.take(5) }, "kg", KeyboardType.Decimal,
+            Modifier.weight(1.2f), placeholder = "自重",
+        )
+    }
+    Spacer(Modifier.height(8.dp))
+    Text(
+        if (valid) spec.setsPreview(item, setCount!!) else "组数 1–$MAX_SETS，次数 1–$MAX_REPS，重量可空着表示自重",
+        style = MaterialTheme.typography.bodyMedium,
+        color = c.secondaryText,
+    )
+    Spacer(Modifier.height(16.dp))
+    SolidButton("记下", Modifier.fillMaxWidth(), enabled = valid) {
+        if (setCount != null && repCount != null) onSave(SetsEntry(setCount, repCount, load))
+    }
+    QuietButton("换一个", onClick = onBack)
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+}
+
+@Composable
+private fun NumberField(
+    value: String,
+    onValue: (String) -> Unit,
+    unit: String,
+    keyboard: KeyboardType,
+    modifier: Modifier,
+    placeholder: String? = null,
+) {
+    val c = Baoji.colors
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValue,
+        singleLine = true,
+        placeholder = placeholder?.let { { Text(it, color = c.secondaryText) } },
+        suffix = { Text(unit, color = c.secondaryText) },
+        keyboardOptions = KeyboardOptions(keyboardType = keyboard),
+        modifier = modifier,
+        colors = baojiFieldColors(),
+    )
+}
+
 /** Whole-number sheet, e.g. today's steps. Saving an empty field or 0 clears the value. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -197,3 +271,8 @@ fun NumberSheet(title: String, unit: String, initial: Int?, max: Int, onDismiss:
 }
 
 private const val SEARCH_DEBOUNCE_MS = 120L
+private const val DEFAULT_SETS = "3"
+private const val DEFAULT_REPS = "10"
+private const val MAX_SETS = 20
+private const val MAX_REPS = 100
+private const val MAX_LIFT_KG = 500.0

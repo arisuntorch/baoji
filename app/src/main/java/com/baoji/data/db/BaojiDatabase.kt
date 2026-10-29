@@ -37,7 +37,7 @@ abstract class BaojiDatabase : RoomDatabase() {
     abstract fun activityLogDao(): ActivityLogDao
 
     companion object {
-        const val VERSION = 2
+        const val VERSION = 3
         const val NAME = "baoji.db"
 
         /** Append each schema change as `Migration(n, n + 1)`; never fall back to destructive migration. */
@@ -52,6 +52,13 @@ abstract class BaojiDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2)
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `activity_log` ADD COLUMN `reps` INTEGER")
+                db.execSQL("ALTER TABLE `activity_log` ADD COLUMN `weightKg` REAL")
+            }
+        }
+
+        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
     }
 }

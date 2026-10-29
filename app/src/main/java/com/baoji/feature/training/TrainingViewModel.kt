@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.baoji.core.HapticKind
 import com.baoji.core.Haptics
 import com.baoji.core.time.TimeSource
+import com.baoji.core.ui.SetsEntry
 import com.baoji.core.ui.Undo
 import com.baoji.data.catalog.CatalogRepository
 import com.baoji.data.catalog.ExerciseItem
@@ -108,8 +109,12 @@ class TrainingViewModel @Inject constructor(
         if (activity.addTimed(item, minutes)) haptics.play(HapticKind.LIGHT)
     }
 
+    fun addSets(item: ExerciseItem, entry: SetsEntry) = viewModelScope.launch {
+        if (activity.addSets(item, entry.sets, entry.reps, entry.weightKg)) haptics.play(HapticKind.LIGHT)
+    }
+
     fun deleteActivity(id: String) = viewModelScope.launch {
-        val log = activityDay.value.timed.firstOrNull { it.id == id } ?: return@launch
+        val log = activityDay.value.workouts.firstOrNull { it.id == id } ?: return@launch
         if (activity.delete(id)) {
             haptics.play(HapticKind.MEDIUM)
             pendingUndo.value = Undo(log.name) { activity.restore(log) }

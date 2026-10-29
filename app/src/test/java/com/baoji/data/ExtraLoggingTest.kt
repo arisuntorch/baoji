@@ -18,6 +18,7 @@ import com.baoji.data.repo.ProfileInput
 import com.baoji.data.repo.ProfileRepository
 import com.baoji.data.repo.TrainingRepository
 import com.baoji.domain.Sex
+import com.baoji.feature.training.activityDetail
 import com.baoji.testing.TestEnv
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
@@ -43,6 +44,7 @@ class ExtraLoggingTest {
     private val activity = ActivityRepository(env.db, env.time)
     private val rice = FoodItem("米饭（蒸，代表值）", "谷类", 116.0, 2.6, 0.3, 25.9)
     private val run = ExerciseItem("跑步（约 9.5 km/h）", "跑步", 9.8)
+    private val pushdown = ExerciseItem("绳索下压［三头下压］", "手臂", 3.5, strength = true)
     private lateinit var benchId: String
     private lateinit var rowId: String
     private lateinit var mealId: String
@@ -120,10 +122,10 @@ class ExtraLoggingTest {
         assertThat(dietDay().extras).containsExactly(log)
 
         activity.addTimed(run, 20.0)
-        val timed = activity.observeDay(flowOf(env.time.today())).first().timed.single()
+        val timed = activity.observeDay(flowOf(env.time.today())).first().workouts.single()
         activity.delete(timed.id)
         activity.restore(timed)
-        assertThat(activity.observeDay(flowOf(env.time.today())).first().timed).containsExactly(timed)
+        assertThat(activity.observeDay(flowOf(env.time.today())).first().workouts).containsExactly(timed)
     }
 
     @Test
@@ -173,6 +175,22 @@ class ExtraLoggingTest {
     }
 
     @Test
+    fun strengthMovesAreLoggedBySetsRepsAndWeight(): Unit = runBlocking {
+        assertThat(activity.addSets(pushdown, sets = 3, reps = 12, weightKg = 15.0)).isTrue()
+        assertThat(activity.addSets(pushdown, sets = 2, reps = 15, weightKg = null)).isTrue()
+        val (loaded, bodyweight) = activity.observeDay(flowOf(env.time.today())).first().workouts
+        assertThat(loaded.kind).isEqualTo(ActivityKind.SETS)
+        assertThat(loaded.amount).isEqualTo(3.0)
+        assertThat(loaded.reps).isEqualTo(12)
+        assertThat(loaded.weightKg).isEqualTo(15.0)
+        // (3.5 − 1) × 70 kg × 6 min / 60.
+        assertThat(loaded.kcal).isWithin(0.05).of(17.5)
+        assertThat(bodyweight.weightKg).isNull()
+        assertThat(activityDetail(loaded)).isEqualTo("3 组 × 12 次 · 15kg")
+        assertThat(activityDetail(bodyweight)).isEqualTo("2 组 × 15 次 · 自重")
+    }
+
+    @Test
     fun activityKcalCountsTowardsBurnAndExport(): Unit = runBlocking {
         val energy = EnergyRepository(env.db, env.time)
         val before = energy.observeDay(flowOf(env.time.today())).first().burnInput!!.trainingKcal
@@ -188,6 +206,7 @@ class ExtraLoggingTest {
     @Test
     fun activitiesSurviveBackupRoundTrip(): Unit = runBlocking {
         activity.addTimed(run, 45.0)
+        activity.addSets(pushdown, sets = 4, reps = 10, weightKg = 20.0)
         activity.setSteps(6000)
         diet.addFood(rice, 200.0)
         val before = DbSnapshot.load(env.db)

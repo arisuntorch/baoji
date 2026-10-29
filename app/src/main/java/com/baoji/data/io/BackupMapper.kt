@@ -45,7 +45,7 @@ object BackupMapper {
     fun toDto(e: FreeLogEntity, clock: String) = FreeDto(e.id, e.type, e.text, clock, e.timestamp, e.updatedAt)
 
     fun toDto(e: ActivityLogEntity, clock: String) =
-        ActivityLogDto(e.id, e.kind, e.name, clock, e.timestamp, e.amount, e.unit, e.kcal, e.updatedAt)
+        ActivityLogDto(e.id, e.kind, e.name, clock, e.timestamp, e.amount, e.unit, e.kcal, e.updatedAt, e.reps, e.weightKg)
 
     fun toDto(e: ExportRecordEntity) = ExportRecordDto(e.id, e.timestamp, e.rangeType, e.fromDate, e.toDate)
 
@@ -80,7 +80,7 @@ object BackupMapper {
     fun toEntity(d: FreeDto, date: Long) = FreeLogEntity(d.id, date, d.ts, d.type, d.text, d.updatedAt)
 
     fun toEntity(d: ActivityLogDto, date: Long) =
-        ActivityLogEntity(d.id, date, d.ts, d.kind, d.name, d.amount, d.unit, d.kcal, d.updatedAt)
+        ActivityLogEntity(d.id, date, d.ts, d.kind, d.name, d.amount, d.unit, d.kcal, d.updatedAt, d.reps, d.weightKg)
 
     fun toEntity(d: SessionDto, date: Long) = TrainingSessionEntity(d.id, date, d.planId, d.startTs, d.endTs, d.updatedAt)
 

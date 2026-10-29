@@ -20,10 +20,14 @@ data class FoodItem(
     }
 }
 
-/** One activity from the built-in list, with its MET value from the Compendium of Physical Activities. */
+/**
+ * One activity from the built-in list with its MET value (Compendium of Physical Activities).
+ * [strength] moves such as 卧推 are logged by sets × reps × weight; the rest by minutes.
+ */
 @Serializable
 data class ExerciseItem(
     @SerialName("n") val name: String,
     @SerialName("c") val category: String,
     @SerialName("m") val met: Double,
+    @SerialName("s") val strength: Boolean = false,
 )

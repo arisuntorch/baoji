@@ -137,9 +137,15 @@ object ActivityKind {
 
     /** The day's step count; at most one row per day, id from [ActivityLogEntity.stepsId]. */
     const val STEPS = "steps"
+
+    /** A strength move from the built-in list; [ActivityLogEntity.amount] is sets, with reps and weight. */
+    const val SETS = "sets"
 }
 
-/** Extra activity outside the plan: catalog workouts and daily steps. [kcal] is a snapshot. */
+/**
+ * Extra activity outside the plan: catalog workouts, strength sets and daily steps. [kcal] is a snapshot.
+ * [reps] and [weightKg] are only set for [ActivityKind.SETS]; a null weight means bodyweight.
+ */
 @Entity(tableName = "activity_log", indices = [Index("date")])
 data class ActivityLogEntity(
     @PrimaryKey val id: String,
@@ -151,6 +157,8 @@ data class ActivityLogEntity(
     val unit: String,
     val kcal: Double,
     val updatedAt: Long,
+    val reps: Int? = null,
+    val weightKg: Double? = null,
 ) {
     companion object {
         fun stepsId(date: Long) = "steps-$date"

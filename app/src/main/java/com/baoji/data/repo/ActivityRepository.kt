@@ -15,8 +15,11 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** A day's activity outside the strength plan. [steps] is null until a count is entered. */
-data class ActivityDay(val steps: ActivityLogEntity?, val timed: List<ActivityLogEntity>)
+/**
+ * A day's activity outside the plan. [steps] is null until a count is entered;
+ * [workouts] holds timed activities and strength sets in the order they were logged.
+ */
+data class ActivityDay(val steps: ActivityLogEntity?, val workouts: List<ActivityLogEntity>)
 
 @Singleton
 class ActivityRepository @Inject constructor(
@@ -30,7 +33,7 @@ class ActivityRepository @Inject constructor(
         logs.observe(date.toEpochDay()).map { rows ->
             ActivityDay(
                 steps = rows.firstOrNull { it.kind == ActivityKind.STEPS },
-                timed = rows.filter { it.kind == ActivityKind.TIMED },
+                workouts = rows.filter { it.kind != ActivityKind.STEPS },
             )
         }
     }
@@ -51,6 +54,23 @@ class ActivityRepository @Inject constructor(
                 id = UUID.randomUUID().toString(), date = today, timestamp = now, kind = ActivityKind.TIMED,
                 name = item.name, amount = minutes, unit = MINUTES,
                 kcal = round1(CalorieEngine.activityKcal(item.met, kg, minutes)), updatedAt = now,
+            ),
+        )
+        return true
+    }
+
+    /** Logs a strength move; a null [weightKg] means bodyweight. False when no body weight is known yet. */
+    suspend fun addSets(item: ExerciseItem, sets: Int, reps: Int, weightKg: Double?): Boolean {
+        val today = time.todayEpochDay()
+        val kg = weightKg(today) ?: return false
+        val now = time.nowMillis()
+        val count = sets.coerceIn(1, MAX_SETS)
+        logs.upsert(
+            ActivityLogEntity(
+                id = UUID.randomUUID().toString(), date = today, timestamp = now, kind = ActivityKind.SETS,
+                name = item.name, amount = count.toDouble(), unit = SETS_UNIT,
+                kcal = round1(CalorieEngine.setsKcal(item.met, kg, count)), updatedAt = now,
+                reps = reps.coerceIn(1, MAX_REPS), weightKg = weightKg?.takeIf { it > 0 }?.coerceAtMost(MAX_LIFT_KG),
             ),
         )
         return true
@@ -90,6 +110,10 @@ class ActivityRepository @Inject constructor(
         const val STEPS_UNIT = "步"
         const val MAX_STEPS = 200_000
         const val MAX_MINUTES = 1_440
+        const val SETS_UNIT = "组"
+        const val MAX_SETS = 20
+        const val MAX_REPS = 100
+        const val MAX_LIFT_KG = 500.0
 
         private fun round1(v: Double) = Math.round(v * 10) / 10.0
     }

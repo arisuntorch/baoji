@@ -48,6 +48,7 @@ import com.baoji.core.ui.monthDay
 import com.baoji.core.ui.pressable
 import com.baoji.core.ui.trimmed
 import com.baoji.data.catalog.ExerciseItem
+import com.baoji.data.db.ActivityKind
 import com.baoji.data.db.FreeLogEntity
 import com.baoji.data.repo.ActivityDay
 import com.baoji.data.repo.ActivityRepository
@@ -121,6 +122,7 @@ fun TrainingScreen(vm: TrainingViewModel = hiltViewModel()) {
             onDismiss = { showExtra = false },
             onSave = vm::addTimed,
             onSaveText = vm::addExtra,
+            onSaveSets = vm::addSets,
         )
     }
 }
@@ -139,18 +141,25 @@ class TrainingActions(
 
 private fun activityPickerSpec(weightKg: Double?) = CatalogPickerSpec<ExerciseItem>(
     title = "加练",
-    searchHint = "搜索运动，如 跑步、游泳、羽毛球",
+    searchHint = "搜索动作，如 卧推、绳索下压、跑步",
     emptyHint = "",
     itemTitle = { it.name },
-    itemSubtitle = { "${it.category} · ${it.met.trimmed()} MET" },
+    itemSubtitle = { if (it.strength) "力量 · ${it.category}" else "${it.category} · ${it.met.trimmed()} MET" },
     amountUnit = ActivityRepository.MINUTES,
     defaultAmount = "30",
     maxAmount = ActivityRepository.MAX_MINUTES.toDouble(),
     preview = { item, minutes ->
         weightKg?.let { "约 ${CalorieEngine.activityKcal(item.met, it, minutes).toLong()} kcal（已扣除静息消耗）" }
-            ?: "先在体重页记一次体重，才能算消耗"
+            ?: NEED_WEIGHT
+    },
+    usesSets = { it.strength },
+    setsPreview = { item, sets ->
+        weightKg?.let { "约 ${CalorieEngine.setsKcal(item.met, it, sets).toLong()} kcal（每组按约 2 分钟含休息估算）" }
+            ?: NEED_WEIGHT
     },
 )
+
+private const val NEED_WEIGHT = "先在体重页记一次体重，才能算消耗"
 
 @Composable
 fun TrainingContent(day: TrainingDay, activity: ActivityDay, extras: List<FreeLogEntity>, actions: TrainingActions) {
@@ -162,9 +171,15 @@ fun TrainingContent(day: TrainingDay, activity: ActivityDay, extras: List<FreeLo
             verticalArrangement = Arrangement.spacedBy(BubbleGap),
         ) {
             item { DateHeader(day, actions.onCalendar) }
-            if (day.isTrainingDay && day.rows.isNotEmpty()) {
+            val planRows = if (day.isTrainingDay) day.rows else emptyList()
+            val liftedSets = activity.workouts.filter { it.kind == ActivityKind.SETS }
+            if (planRows.isNotEmpty() || liftedSets.isNotEmpty()) {
                 item(key = "body") {
-                    val levels = remember(day.rows) { MuscleMap.levels(day.rows.map { ExerciseLoad(it.exercise.name, it.exercise.sets, it.done) }) }
+                    val levels = remember(planRows, liftedSets) {
+                        // Extra strength moves count as planned and done.
+                        val extra = liftedSets.map { ExerciseLoad(it.name, it.amount.toInt(), it.amount.toInt()) }
+                        MuscleMap.levels(planRows.map { ExerciseLoad(it.exercise.name, it.exercise.sets, it.done) } + extra)
+                    }
                     BaojiCard { BodyMap(levels) }
                 }
             }
@@ -184,7 +199,7 @@ fun TrainingContent(day: TrainingDay, activity: ActivityDay, extras: List<FreeLo
             item(key = "steps") {
                 StepsRowItem(activity.steps, onTap = actions.onSteps, onReset = actions.onResetSteps)
             }
-            items(activity.timed, key = { it.id }) { log ->
+            items(activity.workouts, key = { it.id }) { log ->
                 SwipeToDelete(label = log.name, onDelete = { actions.onDeleteActivity(log.id) }) { ActivityLogRow(log) }
             }
             items(extras, key = { it.id }) { e -> NoteBubble(e.text) }

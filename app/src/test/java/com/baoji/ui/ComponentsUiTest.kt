@@ -1,9 +1,15 @@
 package com.baoji.ui
 
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -15,10 +21,12 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.unit.dp
 import com.baoji.data.db.ActivityKind
 import com.baoji.data.db.ActivityLogEntity
 import com.baoji.feature.training.StepsRowItem
 import com.baoji.core.theme.BaojiTheme
+import com.baoji.core.ui.SwipeToDelete
 import com.baoji.data.db.ExerciseEntity
 import com.baoji.data.db.MealTaskEntity
 import com.baoji.data.prefs.NutritionTargets
@@ -135,6 +143,34 @@ class ComponentsUiTest {
         rule.onNodeWithText("燕麦").performTouchInput { swipeRight() }
         rule.waitForIdle()
         assertThat(archived).containsExactly("m1", "m2")
+    }
+
+    @Test
+    fun undoneRowComesBackAndStaysBack() {
+        var rows by mutableStateOf(listOf("卧推", "划船"))
+        var deletes = 0
+        rule.setContent {
+            BaojiTheme(dark = false) {
+                LazyColumn(Modifier.fillMaxWidth()) {
+                    items(rows, key = { it }) { name ->
+                        SwipeToDelete(label = name, onDelete = { deletes++; rows = rows - name }) {
+                            Text(name, Modifier.fillMaxWidth().height(80.dp))
+                        }
+                    }
+                }
+            }
+        }
+        rule.onNodeWithText("卧推").performTouchInput { swipeRight() }
+        rule.waitForIdle()
+        assertThat(rows).containsExactly("划船")
+
+        // Undo puts the same key back; it must not remember being swiped away and delete itself again.
+        rows = listOf("卧推", "划船")
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(2_000)
+        rule.onNodeWithText("卧推").assertExists()
+        assertThat(rows).containsExactly("卧推", "划船")
+        assertThat(deletes).isEqualTo(1)
     }
 
     @Test
