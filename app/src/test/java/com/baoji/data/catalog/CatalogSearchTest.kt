@@ -43,11 +43,17 @@ class CatalogSearchTest {
         val dir = File("src/main/assets/catalog")
         val foods = json.decodeFromString(ListSerializer(FoodItem.serializer()), File(dir, "foods.json").readText())
         val exercises = json.decodeFromString(ListSerializer(ExerciseItem.serializer()), File(dir, "exercises.json").readText())
-        assertThat(foods.size).isGreaterThan(1800)
+        assertThat(foods.size).isGreaterThan(1000)
         assertThat(foods.all { it.kcal >= 0 && it.protein >= 0 && it.fat >= 0 && it.carbs >= 0 }).isTrue()
-        for (q in listOf("米饭", "鸡蛋", "牛奶", "鸡胸", "燕麦", "面包", "宫保鸡丁", "饺子", "奶茶", "汉堡", "沙拉")) {
+        for (q in listOf("米饭", "鸡蛋", "牛奶", "鸡胸肉", "燕麦", "牛肉", "五花肉", "西兰花", "土豆", "豆腐", "橄榄油")) {
             assertThat(CatalogSearch.search(foods, q) { it.name }).isNotEmpty()
         }
+        // Raw ingredients only: meals are cooked at home and weighed raw.
+        assertThat(CatalogSearch.search(foods, "米饭") { it.name }.first().name).startsWith("稻米")
+        for (q in listOf("熟", "煮", "炒", "炸", "面包", "饺子", "奶茶", "汉堡")) {
+            assertThat(foods.filter { it.name.substringBefore('［').contains(q) }).isEmpty()
+        }
+        assertThat(foods.map { it.name }.toSet()).hasSize(foods.size)
         // Everyday names find the table's formal ones.
         assertThat(CatalogSearch.search(foods, "橙子") { it.name }.first().name).isEqualTo("橙［橙子］")
         assertThat(CatalogSearch.search(foods, "包菜") { it.name }.map { it.name }).contains("结球甘蓝（绿）［圆白菜、包菜、卷心菜］")

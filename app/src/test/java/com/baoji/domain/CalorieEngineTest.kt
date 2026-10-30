@@ -33,6 +33,16 @@ class CalorieEngineTest {
     }
 
     @Test
+    fun missingStepsCountAsDefaultFrom2345() {
+        val withDefault = input().copy(defaultStepsKcal = 200.0)
+        val before = noon.withHour(23).withMinute(44)
+        assertThat(CalorieEngine.burnedAt(withDefault, before) - CalorieEngine.burnedAt(input(), before)).isEqualTo(0.0)
+        val at = noon.withHour(23).withMinute(45)
+        assertThat(CalorieEngine.burnedAt(withDefault, at) - CalorieEngine.burnedAt(input(), at)).isWithin(1e-9).of(200.0)
+        assertThat(CalorieEngine.burnedFullDay(withDefault) - CalorieEngine.burnedFullDay(input())).isWithin(1e-9).of(200.0)
+    }
+
+    @Test
     fun zeroDailyActivityOnlyDropsThatPart() {
         assertThat(CalorieEngine.burnedAt(input(activity = 0.0), noon)).isWithin(1e-6).of(1698.75 * 1.2 * 0.5)
     }

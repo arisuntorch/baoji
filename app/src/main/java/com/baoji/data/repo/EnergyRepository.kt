@@ -1,6 +1,7 @@
 package com.baoji.data.repo
 
 import com.baoji.core.time.TimeSource
+import com.baoji.data.db.ActivityKind
 import com.baoji.data.db.BaojiDatabase
 import com.baoji.domain.AgeCalculator
 import com.baoji.domain.BurnInput
@@ -47,6 +48,8 @@ class EnergyRepository @Inject constructor(
                     age = AgeCalculator.currentAge(profile.enteredAge, profile.enteredYear, date),
                     dailyActivityKcal = activities.sumOf { it.kcal },
                     trainingKcal = CalorieEngine.trainingKcal(sets.map { it.kcal } + extra.map { it.kcal }),
+                    defaultStepsKcal = if (extra.any { it.kind == ActivityKind.STEPS }) 0.0
+                    else CalorieEngine.stepsKcal(CalorieEngine.DEFAULT_STEPS, weight.kg),
                 )
             }
         }

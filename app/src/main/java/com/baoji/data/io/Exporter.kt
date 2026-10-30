@@ -1,6 +1,7 @@
 package com.baoji.data.io
 
 import com.baoji.core.time.TimeSource
+import com.baoji.data.db.ActivityKind
 import com.baoji.data.db.BaojiDatabase
 import com.baoji.data.db.ExportRecordEntity
 import com.baoji.data.prefs.SettingsStore
@@ -109,13 +110,16 @@ class Exporter @Inject constructor(
             free = s.freeLogs.filter { it.date == epochDay }.map { BackupMapper.toDto(it, clock(it.timestamp, zone)) },
             activities = activities.map { BackupMapper.toDto(it, clock(it.timestamp, zone)) },
             kcalIn = round1(kcalIn),
-            kcalOut = kcalOut(s, date, sets.sumOf { it.kcal } + activities.sumOf { it.kcal }, zone, today)?.let(::round1),
+            kcalOut = kcalOut(
+                s, date, sets.sumOf { it.kcal } + activities.sumOf { it.kcal },
+                hasSteps = activities.any { it.kind == ActivityKind.STEPS }, zone, today,
+            )?.let(::round1),
             ids = DayIdsDto(weightRow?.id, weightRow?.updatedAt ?: 0, diaryRow?.id, diaryRow?.updatedAt ?: 0)
                 .takeIf { weightRow != null || diaryRow != null },
         )
     }
 
-    private fun kcalOut(s: DbSnapshot, date: LocalDate, trainingKcal: Double, zone: ZoneId, today: LocalDate): Double? {
+    private fun kcalOut(s: DbSnapshot, date: LocalDate, trainingKcal: Double, hasSteps: Boolean, zone: ZoneId, today: LocalDate): Double? {
         val p = s.profile ?: return null
         val kg = s.weights.filter { it.date <= date.toEpochDay() }.maxByOrNull { it.date }?.kg ?: return null
         val sex = runCatching { Sex.valueOf(p.sex) }.getOrNull() ?: return null
@@ -126,6 +130,7 @@ class Exporter @Inject constructor(
             age = AgeCalculator.currentAge(p.enteredAge, p.enteredYear, date),
             dailyActivityKcal = s.activities.filter { !it.archived }.sumOf { it.kcal },
             trainingKcal = trainingKcal,
+            defaultStepsKcal = if (hasSteps) 0.0 else CalorieEngine.stepsKcal(CalorieEngine.DEFAULT_STEPS, kg),
         )
         return if (date == today) CalorieEngine.burnedAt(input, time.now().withZoneSameInstant(zone))
         else CalorieEngine.burnedFullDay(input)

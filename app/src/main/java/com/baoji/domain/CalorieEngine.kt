@@ -2,6 +2,7 @@ package com.baoji.domain
 
 import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
@@ -13,6 +14,8 @@ data class BurnInput(
     val age: Int,
     val dailyActivityKcal: Double,
     val trainingKcal: Double,
+    /** Kcal of [CalorieEngine.DEFAULT_STEPS] when the day has no step count; 0 once one is entered. */
+    val defaultStepsKcal: Double = 0.0,
 )
 
 /**
@@ -46,12 +49,18 @@ object CalorieEngine {
         return (elapsed / total).coerceIn(0.0, 1.0)
     }
 
-    /** Total burn so far today: time-proportional uniform part plus training. */
-    fun burnedAt(input: BurnInput, now: ZonedDateTime): Double =
-        dailyUniform(input) * dayFraction(now) + input.trainingKcal
+    /** Total burn so far today: time-proportional uniform part plus training, plus default steps from [DEFAULT_STEPS_AT]. */
+    fun burnedAt(input: BurnInput, now: ZonedDateTime): Double {
+        val steps = if (now.toLocalTime() < DEFAULT_STEPS_AT) 0.0 else input.defaultStepsKcal
+        return dailyUniform(input) * dayFraction(now) + input.trainingKcal + steps
+    }
 
     /** Total burn for a finished day. */
-    fun burnedFullDay(input: BurnInput): Double = dailyUniform(input) + input.trainingKcal
+    fun burnedFullDay(input: BurnInput): Double = dailyUniform(input) + input.trainingKcal + input.defaultStepsKcal
+
+    /** A day with no step count is taken as this many steps once the clock passes [DEFAULT_STEPS_AT]. */
+    const val DEFAULT_STEPS = 10_000
+    val DEFAULT_STEPS_AT: LocalTime = LocalTime.of(23, 45)
 
     /** Training kcal from completed sets: each entry is that set's kcal snapshot. */
     fun trainingKcal(setKcals: List<Double>): Double = setKcals.sum()

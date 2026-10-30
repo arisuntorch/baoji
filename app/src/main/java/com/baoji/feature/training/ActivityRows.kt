@@ -26,6 +26,7 @@ import com.baoji.core.ui.trimmed
 import com.baoji.data.db.ActivityKind
 import com.baoji.data.db.ActivityLogEntity
 import com.baoji.data.repo.ActivityRepository
+import com.baoji.domain.CalorieEngine
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -33,7 +34,7 @@ import java.util.Locale
 @Composable
 fun StepsRowItem(steps: ActivityLogEntity?, onTap: () -> Unit, onReset: () -> Unit) {
     val c = Baoji.colors
-    val detail = steps?.let { "${formatSteps(it.amount)} 步 · ${it.kcal.toLong()} kcal" } ?: "点按填写今天的步数"
+    val detail = steps?.let { "${formatSteps(it.amount)} 步 · ${it.kcal.toLong()} kcal" } ?: DEFAULT_STEPS_HINT
     Row(
         Modifier
             .fillMaxWidth()
@@ -77,5 +78,9 @@ fun activityDetail(log: ActivityLogEntity): String {
     val load = log.weightKg?.let { "${it.trimmed()}kg" } ?: "自重"
     return "${log.amount.toInt()} 组 × ${log.reps ?: 0} 次 · $load"
 }
+
+/** Shown while today has no count; [CalorieEngine.burnedAt] counts the default from 23:45. */
+private val DEFAULT_STEPS_HINT =
+    "未填写，${CalorieEngine.DEFAULT_STEPS_AT} 起按 ${formatSteps(CalorieEngine.DEFAULT_STEPS.toDouble())} 步计"
 
 private fun formatSteps(amount: Double): String = NumberFormat.getIntegerInstance(Locale.ROOT).format(amount.toLong())

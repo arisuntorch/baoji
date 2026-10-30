@@ -61,7 +61,7 @@
 | `days[].activities` | 计划外的运动：`kind` 为 `steps` 是当天步数（`amount` 是步数），`timed` 是从内置运动表加的练习（`amount` 是分钟），`sets` 是加练的力量动作（`amount` 是组数，`reps` 每组次数，`weightKg` 重量，没有则是自重）。`kcal` 已计入 `kcalOut` |
 | `days[].free` | 自由记录：`type` 为 `training` 是「加练」（如跑步），`meal` 是「加餐」，内容是文字 |
 | `days[].kcalIn` | 当天摄入（打勾项 kcal 之和） |
-| `days[].kcalOut` | 当天总消耗：基础代谢 × 1.2 + 日常活动 + 完成组的 kcal + `activities` 的 kcal；缺体重或资料时为空 |
+| `days[].kcalOut` | 当天总消耗：基础代谢 × 1.2 + 日常活动 + 完成组的 kcal + `activities` 的 kcal；当天没填步数时按 1 万步计入（今天要到 23:45 后才计入）；缺体重或资料时为空 |
 
 ## 常见分析
 

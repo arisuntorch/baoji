@@ -107,7 +107,7 @@ class MealActions(
 private val FoodPickerSpec = CatalogPickerSpec<FoodItem>(
     title = "加餐",
     searchHint = "搜索食物，如 米饭、鸡蛋、牛奶",
-    emptyHint = "数据来自《中国食物成分表》，按可食部分称重",
+    emptyHint = "数据来自《中国食物成分表》，只收生食材，按生重（可食部分）称重",
     itemTitle = { it.name },
     itemSubtitle = { "${it.category} · 每100克 ${it.kcal.trimmed()} kcal" },
     amountUnit = "克",

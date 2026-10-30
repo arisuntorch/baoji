@@ -175,6 +175,15 @@ class ExtraLoggingTest {
     }
 
     @Test
+    fun unrecordedStepsDefaultToTenThousandUntilACountIsEntered(): Unit = runBlocking {
+        val energy = EnergyRepository(env.db, env.time)
+        // 10,000 steps ≈ 91 min at 3.5 MET for 70 kg.
+        assertThat(energy.observeDay(flowOf(env.time.today())).first().burnInput!!.defaultStepsKcal).isWithin(0.2).of(265.2)
+        activity.setSteps(3000)
+        assertThat(energy.observeDay(flowOf(env.time.today())).first().burnInput!!.defaultStepsKcal).isEqualTo(0.0)
+    }
+
+    @Test
     fun strengthMovesAreLoggedBySetsRepsAndWeight(): Unit = runBlocking {
         assertThat(activity.addSets(pushdown, sets = 3, reps = 12, weightKg = 15.0)).isTrue()
         assertThat(activity.addSets(pushdown, sets = 2, reps = 15, weightKg = null)).isTrue()
